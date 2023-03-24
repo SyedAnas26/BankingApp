@@ -1,26 +1,22 @@
 package models;
 
 public class User {
-    private long id;
+
+
+    private int id;
     private String firstName;
     private String lastName;
     private String password;
     private String email;
     private String token;
+    private Boolean isAdmin;
 
 
-    public User(String email, String firstName, String lastName, String password){
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.password = password;
-        this.email = email;
-    }
-
-    public long getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -63,4 +59,14 @@ public class User {
     public void setToken(String token) {
         this.token = token;
     }
+
+    public Boolean getAdmin() {
+        return isAdmin;
+    }
+
+    public void setAdmin(Boolean admin) {
+        isAdmin = admin;
+    }
+
+
 }

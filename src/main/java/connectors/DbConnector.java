@@ -37,7 +37,7 @@ public class DbConnector {
         }
     }
 
-    public static int insert(String query) throws Exception {
+    public static int  insert(String query) throws Exception {
         Connection connection = makeConnection();
         try {
             PreparedStatement stmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);

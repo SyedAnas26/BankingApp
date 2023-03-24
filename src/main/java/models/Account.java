@@ -1,38 +1,41 @@
 package models;
 
+import models.enums.AccountType;
+
 import java.util.Date;
+
 
 public class Account {
 
-    private long id;
-    private long userId;
-    private int accountId;
+    private int id;
+    private int userId;
+    public int accountNo;
     private float balance;
     private Date creationDate;
     private AccountType accountType;
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
-    public long getUserId() {
+    public int getUserId() {
         return userId;
     }
 
-    public void setUserId(long userId) {
+    public void setUserId(int userId) {
         this.userId = userId;
     }
 
-    public int getAccountId() {
-        return accountId;
+    public int getAccountNo() {
+        return accountNo;
     }
 
-    public void setAccountId(int accountId) {
-        this.accountId = accountId;
+    public void setAccountNo(int accountNo) {
+        this.accountNo = accountNo;
     }
 
     public float getBalance() {

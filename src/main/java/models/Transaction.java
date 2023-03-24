@@ -1,21 +1,25 @@
 package models;
 
+import models.enums.PaymentMode;
+import models.enums.TransactionStatus;
+import models.enums.TransactionType;
+
 import java.util.Date;
 
 public class Transaction {
-    private long id;
-    private long accountId;
+    private int id;
+    private int accountId;
     private Date createdDate;
-    private int modeOfPayment;
-    private int transactionType;
+    private PaymentMode modeOfPayment;
+    private TransactionType transactionType;
     private float amount;
-    private int transactionStatus;
+    private TransactionStatus transactionStatus;
 
     public long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -23,7 +27,7 @@ public class Transaction {
         return accountId;
     }
 
-    public void setAccountId(long accountId) {
+    public void setAccountId(int accountId) {
         this.accountId = accountId;
     }
 
@@ -35,19 +39,19 @@ public class Transaction {
         this.createdDate = createdDate;
     }
 
-    public int getModeOfPayment() {
+    public PaymentMode getModeOfPayment() {
         return modeOfPayment;
     }
 
-    public void setModeOfPayment(int modeOfPayment) {
+    public void setModeOfPayment(PaymentMode modeOfPayment) {
         this.modeOfPayment = modeOfPayment;
     }
 
-    public int getTransactionType() {
+    public TransactionType getTransactionType() {
         return transactionType;
     }
 
-    public void setTransactionType(int transactionType) {
+    public void setTransactionType(TransactionType transactionType) {
         this.transactionType = transactionType;
     }
 
@@ -59,11 +63,11 @@ public class Transaction {
         this.amount = amount;
     }
 
-    public int getTransactionStatus() {
+    public TransactionStatus getTransactionStatus() {
         return transactionStatus;
     }
 
-    public void setTransactionStatus(int transactionStatus) {
+    public void setTransactionStatus(TransactionStatus transactionStatus) {
         this.transactionStatus = transactionStatus;
     }
 }
