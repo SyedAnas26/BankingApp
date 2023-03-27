@@ -1,11 +1,14 @@
 package models;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class UpiTransfer {
     private int id;
     private String upiId;
-    private String transactionId;
+    private int transactionId;
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 
@@ -21,11 +24,19 @@ public class UpiTransfer {
         this.upiId = upiId;
     }
 
-    public String getTransactionId() {
+    public int getTransactionId() {
         return transactionId;
     }
 
-    public void setTransactionId(String transactionId) {
+    public void setTransactionId(int transactionId) {
         this.transactionId = transactionId;
     }
+
+    public void setValuesFromResultSet(ResultSet rs) throws SQLException {
+        this.id = rs.getInt("id");
+        this.upiId = rs.getString("upi_id");
+        this.transactionId = rs.getInt("transaction_id");
+    }
+
+
 }

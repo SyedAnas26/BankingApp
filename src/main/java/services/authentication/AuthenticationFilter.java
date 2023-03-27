@@ -1,8 +1,8 @@
-package authentication;
+package services.authentication;
 
 import com.mysql.cj.exceptions.WrongArgumentException;
 import connectors.DbConnector;
-import models.enums.UserType;
+import services.Secured;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
@@ -28,6 +28,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
         String authorizationHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
 
         String uriPath = requestContext.getUriInfo().getPath();
+
         int userId = Integer.parseInt(uriPath.split("/")[1]);
         String userType = uriPath.split("/")[0];
 
@@ -66,17 +67,10 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
     private Boolean validateToken(String token, int userId, String userType) throws Exception {
 
-        UserType type = UserType.getTypeByPath(userType);
 
-        if(type == null || token.equals("null"))
+        if(userType == null || token.equals("null"))
             throw new WrongArgumentException();
-
-        String query;
-        if (type == UserType.CUSTOMER)
-            query = "select 1 from user where id='" + userId + "' and token='" + token + "';";
-        else
-            query = "select 1 from user where id='" + userId + "' and token='" + token + "' and is_admin = 1;";
-
+        String query = "select 1 from user where id='" + userId + "' and token='" + token + "';";;
         return (Boolean) DbConnector.get(query, ResultSet::next);
     }
 

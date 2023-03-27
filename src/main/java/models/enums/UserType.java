@@ -1,6 +1,5 @@
 package models.enums;
 
-import javax.jws.soap.SOAPBinding;
 import javax.xml.bind.annotation.XmlEnum;
 import javax.xml.bind.annotation.XmlEnumValue;
 import java.util.Arrays;

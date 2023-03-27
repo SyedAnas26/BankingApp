@@ -2,6 +2,8 @@ package models;
 
 import models.enums.AccountType;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
 
 
@@ -60,5 +62,14 @@ public class Account {
 
     public void setAccountType(AccountType accountType) {
         this.accountType = accountType;
+    }
+
+    public void setValuesFromResultSet(ResultSet rs) throws SQLException {
+        this.id = rs.getInt("id");
+        this.balance =rs.getFloat("balance");
+        this.accountType = AccountType.getTypeById(rs.getInt("account_type"));
+        this.userId = rs.getInt("user_id");
+        this.creationDate = rs.getDate("created_date");
+        this.accountNo = rs.getInt("account_no");
     }
 }

@@ -1,7 +1,8 @@
-package authentication;
+package services.authentication;
 
 import connectors.DbConnector;
 import models.User;
+import services.Secured;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -9,7 +10,6 @@ import javax.ws.rs.core.Response;
 import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
-import java.sql.Types;
 import java.util.Base64;
 
 @Path("/auth")
@@ -35,7 +35,7 @@ public class AuthenticationService {
                 if(rs.next()) {
                     User user = new User();
                     user.setId(rs.getInt("id"));
-                    user.setAdmin(rs.getBoolean("is_admin"));
+                    user.setAdmin(rs.getBoolean("is_employee"));
                     return user;
                 }
                 return null;
@@ -66,18 +66,15 @@ public class AuthenticationService {
         }
     }
 
-    @Path("/logout")
+    @Secured
+    @Path("/{id}/logout")
     @Consumes(MediaType.APPLICATION_JSON)
     @POST
-    public Response logoutUser(User user) throws Exception {
-
-
+    public Response logoutUser(User user, @PathParam("id") int id) throws Exception {
         try {
-            String updateQuery = "update user set token ='"+ Types.NULL+"' where id='"+user.getId()+"'";
+            String updateQuery = "update user set token ='"+null+"' where id='"+id+"'";
             DbConnector.update(updateQuery);
             return Response.ok().entity("{\"status\":\"success\"}").build();
-        }catch(SQLIntegrityConstraintViolationException e){
-            return Response.status(Response.Status.CONFLICT).entity("{\"status\":\"failed\", \"reason\":\"Email should be unique\"}").build();
         }catch (Exception e){
             e.printStackTrace();
             return Response.serverError().build();

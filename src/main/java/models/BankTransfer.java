@@ -1,12 +1,15 @@
 package models;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 public class BankTransfer {
     private int id;
     private int transactionId;
     private int accountNo;
     private String holderName;
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 
@@ -14,7 +17,7 @@ public class BankTransfer {
         this.id = id;
     }
 
-    public long getTransactionId() {
+    public int getTransactionId() {
         return transactionId;
     }
 
@@ -36,5 +39,12 @@ public class BankTransfer {
 
     public void setHolderName(String holderName) {
         this.holderName = holderName;
+    }
+
+    public void setValuesFromResultSet(ResultSet rs) throws SQLException {
+        this.id = rs.getInt("id");
+        this.holderName = rs.getString("holder_name");
+        this.transactionId = rs.getInt("transaction_id");
+        this.accountNo = rs.getInt("account_no");
     }
 }

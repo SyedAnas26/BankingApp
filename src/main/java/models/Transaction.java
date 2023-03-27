@@ -4,6 +4,8 @@ import models.enums.PaymentMode;
 import models.enums.TransactionStatus;
 import models.enums.TransactionType;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
 
 public class Transaction {
@@ -15,7 +17,7 @@ public class Transaction {
     private float amount;
     private TransactionStatus transactionStatus;
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 
@@ -23,7 +25,7 @@ public class Transaction {
         this.id = id;
     }
 
-    public long getAccountId() {
+    public int getAccountId() {
         return accountId;
     }
 
@@ -69,5 +71,15 @@ public class Transaction {
 
     public void setTransactionStatus(TransactionStatus transactionStatus) {
         this.transactionStatus = transactionStatus;
+    }
+
+    public void setValuesFromResultSet(ResultSet rs) throws SQLException {
+        this.id = rs.getInt("id");
+        this.transactionStatus = TransactionStatus.getStatusById(rs.getInt("transaction_status"));
+        this.accountId = rs.getInt("account_id");
+        this.amount = rs.getFloat("amount");
+        this.createdDate= rs.getDate("created_date");
+        this.modeOfPayment= PaymentMode.getModeById(rs.getInt("mode_of_payment"));
+        this.transactionType= TransactionType.getTypeById(rs.getInt("transaction_type"));
     }
 }

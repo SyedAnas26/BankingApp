@@ -1,156 +1,174 @@
 package services;
 
-import authentication.Secured;
 import connectors.DbConnector;
-import models.Account;
-import models.enums.AccountType;
+
+import models.Transaction;
+import models.enums.TransactionType;
 import models.enums.UserType;
-import services.beans.AccountFilterBean;
+import org.apache.commons.lang3.StringUtils;
+import services.beans.TransactionFilterBean;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.UUID;
 
 @Secured
-@Path("{userType}/{userId}/account")
-@Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
 public class TransactionService {
 
+    String userType;
+    int userId;
 
-        @PathParam("userType")
-        private String userType;
-        @PathParam("userId")
-        private int userId;
+    public TransactionService(String userType, int userId) {
+        this.userId= userId;
+        this.userType = userType;
+    }
 
-
+    @Path("/list")
         @GET
-        public Response getTransactionList(@BeanParam AccountFilterBean accountFilterBean)  throws Exception {
+        public Response getTransactionList(@BeanParam TransactionFilterBean transactionFilterBean)  throws Exception {
 
-            ArrayList<Account> accounts = new ArrayList<>();
+            ArrayList<Transaction> transactions = new ArrayList<>();
 
-            String query =  accountFilterBean.getFilteredQuery(userType,userId);
+            String query =  transactionFilterBean.getFilteredQuery(userType,userId);
 
-            DbConnector.get(query, res -> {
-                while (res.next()) {
-                    Account account = new Account();
-                    account.setId(res.getInt("id"));
-                    account.setBalance(res.getFloat("balance"));
-                    account.setAccountType(AccountType.getTypeById(res.getInt("account_type")));
-                    account.setUserId(res.getInt("user_id"));
-                    account.setCreationDate(res.getDate("created_date"));
-                    account.setAccountNo(res.getInt("account_no"));
-
-                    if (UserType.getTypeByPath(userType) == UserType.CUSTOMER && userId != account.getUserId())
-                        continue;
-
-                    accounts.add(account);
+            DbConnector.get(query, rs -> {
+                while (rs.next()) {
+                    Transaction transaction = new Transaction();
+                    transaction.setValuesFromResultSet(rs);
+                    transactions.add(transaction);
                 }
                 return null;
             });
 
-            return Response.ok().entity(accounts).build();
+            return Response.ok().entity(transactions).build();
         }
-
-
-
 
         @Path("/{id}")
         @GET
-        public Response getAccount(@PathParam("id") int id) throws Exception {
+        public Response getTransaction(@PathParam("id") int id) throws Exception {
 
-            String query = "select * from account where id=" + id + ";";
+            String query = "select * from transaction where id=" + id + ";";
 
-            System.out.println(UserType.getTypeByPath(userType));
-            System.out.println(userId);
-
-            Account requestedAccount = (Account) DbConnector.get(query, res -> {
-                Account account = new Account();
-                if (res.next()) {
-                    account.setId(res.getInt("id"));
-                    account.setAccountNo(res.getInt("account_no"));
-                    account.setBalance(res.getFloat("balance"));
-                    account.setAccountType(AccountType.getTypeById(res.getInt("account_type")));
-                    account.setUserId(res.getInt("user_id"));
-                    account.setCreationDate(res.getDate("created_date"));
-                    account.setAccountNo(res.getInt("account_no"));
+            Transaction requestedTransaction = (Transaction) DbConnector.get(query, rs -> {
+                Transaction transaction = new Transaction();
+                if (rs.next()) {
+                   transaction.setValuesFromResultSet(rs);
                 }
-                return account;
+                return transaction;
             });
 
-            if (requestedAccount.getId() == 0){
+            if (requestedTransaction.getId() == 0){
                 return Response.status(404).entity("{\"status\":\"failed\", \"reason\":\"not found\"}").build();
 
             }
 
-            if(UserType.getTypeByPath(userType) == UserType.CUSTOMER && userId != requestedAccount.getUserId()){
+            if(UserType.getTypeByPath(userType) == UserType.CUSTOMER && !verifyAccount(requestedTransaction.getAccountId())){
                 return Response.status(404).entity("{\"status\":\"failed\", \"reason\":\"Not accessible\"}").build();
             }
 
-            return Response.ok().entity(requestedAccount).build();
+            return Response.ok().entity(requestedTransaction).build();
         }
 
 
 
         @POST
-        public Response createAccount(Account newAccount) {
+        public Response createTransaction(Transaction newTransaction) throws Exception {
 
-            newAccount.setAccountNo(generateRandomNumber());
-            String insertQuery = "insert into account(balance,account_type,user_id,account_no) values ('"+
-                    newAccount.getBalance() + "','" +
-                    newAccount.getAccountType().getId() + "','" + newAccount.getUserId() + "','"+ newAccount.getAccountNo() + "')";
+            if(!verifyAccount(newTransaction.getAccountId()))
+                return Response.status(Response.Status.UNAUTHORIZED).entity("{\"status\":\"failed\", \"reason\":\"Invalid Account ID\"}").build();
+
+            String insertQuery = "insert into transaction(account_id,mode_of_payment,transaction_type,amount,transaction_status) values ('"+
+                    newTransaction.getAccountId() + "','" +
+                    newTransaction.getModeOfPayment().getId() + "','"+ newTransaction.getTransactionType().getId() +
+                    "','"+ newTransaction.getAmount() + "','"+ newTransaction.getTransactionStatus().getId() +"')";
+
             try {
-                newAccount.setId(DbConnector.insert(insertQuery));
-            } catch (SQLIntegrityConstraintViolationException e){
-                return Response.status(409).entity("{\"error\":\"account number already exists\"}").build();
+
+                newTransaction.setId(DbConnector.insert(insertQuery));
+                float changeInAmount = newTransaction.getAmount();;
+
+                if(newTransaction.getTransactionType() == TransactionType.DEBIT)
+                    changeInAmount = -(changeInAmount);
+
+                String getQuery = "select * from account where id="+newTransaction.getAccountId();
+                float finalChangeInAmount = changeInAmount;
+
+                DbConnector.get(getQuery, rs->{
+                    if(rs.next()){
+                        DbConnector.update("update account set balance="+ (rs.getFloat("balance") + finalChangeInAmount)+ "where id="+rs.getInt("id"));
+                    }
+                    return null;
+                });
+
             } catch (Exception e) {
                 e.printStackTrace();
                 return Response.serverError().build();
             }
-            return Response.ok().entity(newAccount).build();
+
+            return Response.ok().entity(newTransaction).build();
 
         }
 
-        @PUT
-        public Response updateAccount(Account account) {
+    private boolean verifyAccount(int accountId) throws Exception {
+            String accountCheckQuery = "select 1 from account where id="+accountId+" and user_id="+userId+";";
+            return (Boolean) DbConnector.get(accountCheckQuery, ResultSet::next);
+    }
 
-            StringBuilder updateQuery = new StringBuilder();
-            updateQuery.append("update account set ");
-            if (account.getAccountType() != null){
-                updateQuery.append("account_type=").append(account.getAccountType().getId());
-            }
+    @PUT
+    public Response updateTransaction(Transaction transaction) {
 
-            if(account.getAccountType() != null && account.getBalance() > 0){
-                updateQuery.append(",");
-            }
+            ArrayList<String> strings = new ArrayList<>();
 
-            if(account.getBalance() > 0){
-                updateQuery.append("balance=").append(account.getBalance());
-            }
-            updateQuery.append("where id=").append(account.getId()).append(";");
+            if(transaction.getTransactionType() != null)
+                strings.add("transaction_type="+transaction.getTransactionType().getId());
+            if(transaction.getAmount() > 0)
+                strings.add("amount="+transaction.getAmount());
+            if (transaction.getModeOfPayment() != null)
+                strings.add("mode_of_payment=" + transaction.getModeOfPayment().getId());
+            if (transaction.getTransactionStatus() != null)
+                strings.add("transaction_status="+ transaction.getTransactionStatus().getId());
+
+            if(strings.size() == 0 || transaction.getId() == 0)
+                return Response.status(Response.Status.PARTIAL_CONTENT).entity("{\"status\":\"failed\", \"reason\":\"Not enough values\"}").build();
+
+            String updateQuery = "update transaction set " + StringUtils.join(strings, ",") + " where id="+transaction.getId() +";";
 
             try {
-                DbConnector.update(updateQuery.toString());
+
+                if (transaction.getAmount() > 0 || transaction.getTransactionType() != null) {
+                    String getTransQuery = "select t.amount,a.balance,t.account_id,t.transaction_type from transaction as t inner join account as a on t.account_id = a.id and t.id="+ transaction.getId();
+
+                    DbConnector.get(getTransQuery, rs -> {
+                        if(rs.next()) {
+                            float amountDifference = transaction.getAmount() - rs.getFloat("amount");
+
+                            if (transaction.getTransactionType() != null && transaction.getTransactionType().getId() != rs.getInt("transaction_type")) {
+
+                                if(transaction.getAmount() >= rs.getFloat("amount"))
+                                    amountDifference = ( transaction.getAmount() * 2 ) - Math.abs(amountDifference);
+                                else
+                                    amountDifference = ( transaction.getAmount() * 2 ) + Math.abs(amountDifference);
+
+                            }
+
+                            if (transaction.getTransactionType() == TransactionType.DEBIT)
+                                amountDifference = -amountDifference;
+
+                            System.out.println(amountDifference);
+                            DbConnector.update("update account set balance=" + (rs.getFloat("balance") + amountDifference) + "where id=" + rs.getInt("account_id"));
+                        }
+                        return null;
+                    });
+                }
+
+                DbConnector.update(updateQuery);
             } catch (Exception e) {
                 e.printStackTrace();
                 return Response.serverError().build();
             }
-            return Response.ok().entity(account).build();
+            return Response.ok().entity(transaction).build();
 
-        }
-
-
-
-        private int generateRandomNumber() {
-            UUID idOne = UUID.randomUUID();
-            String str=""+idOne;
-            int uid=str.hashCode();
-            String filterStr=""+uid;
-            str=filterStr.replaceAll("-", "");
-            return Integer.parseInt(str);
         }
 
     }

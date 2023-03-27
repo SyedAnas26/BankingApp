@@ -1,30 +1,33 @@
 package services;
 
-import authentication.Secured;
 import connectors.DbConnector;
 import models.Account;
-import models.enums.AccountType;
 import models.enums.UserType;
+
+import org.apache.commons.lang3.StringUtils;
 import services.beans.AccountFilterBean;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.ArrayList;
 import java.util.UUID;
 
 @Secured
-@Path("{userType}/{userId}/account")
-@Consumes(MediaType.APPLICATION_JSON)
-@Produces(MediaType.APPLICATION_JSON)
 public class AccountService {
-    @PathParam("userType")
-    private String userType;
-    @PathParam("userId")
-    private int userId;
 
-//    @Path("/list")
+
+    String userType;
+    int userId;
+
+    public AccountService(String userType, int userId) {
+        this.userId= userId;
+        this.userType = userType;
+    }
+
+
+    @Path("/list")
     @GET
     public Response getAccountList(@BeanParam AccountFilterBean accountFilterBean)  throws Exception {
 
@@ -32,16 +35,10 @@ public class AccountService {
 
         String query =  accountFilterBean.getFilteredQuery(userType,userId);
 
-        DbConnector.get(query, res -> {
-            while (res.next()) {
+        DbConnector.get(query, rs -> {
+            while (rs.next()) {
                 Account account = new Account();
-                account.setId(res.getInt("id"));
-                account.setBalance(res.getFloat("balance"));
-                account.setAccountType(AccountType.getTypeById(res.getInt("account_type")));
-                account.setUserId(res.getInt("user_id"));
-                account.setCreationDate(res.getDate("created_date"));
-                account.setAccountNo(res.getInt("account_no"));
-
+                account.setValuesFromResultSet(rs);
                 if (UserType.getTypeByPath(userType) == UserType.CUSTOMER && userId != account.getUserId())
                     continue;
 
@@ -62,19 +59,10 @@ public class AccountService {
 
         String query = "select * from account where id=" + id + ";";
 
-        System.out.println(UserType.getTypeByPath(userType));
-        System.out.println(userId);
-
-        Account requestedAccount = (Account) DbConnector.get(query, res -> {
+        Account requestedAccount = (Account) DbConnector.get(query, rs -> {
             Account account = new Account();
-            if (res.next()) {
-                account.setId(res.getInt("id"));
-                account.setAccountNo(res.getInt("account_no"));
-                account.setBalance(res.getFloat("balance"));
-                account.setAccountType(AccountType.getTypeById(res.getInt("account_type")));
-                account.setUserId(res.getInt("user_id"));
-                account.setCreationDate(res.getDate("created_date"));
-                account.setAccountNo(res.getInt("account_no"));
+            if (rs.next()) {
+                account.setValuesFromResultSet(rs);
             }
             return account;
         });
@@ -96,7 +84,12 @@ public class AccountService {
     @POST
     public Response createAccount(Account newAccount) {
 
+        newAccount.setUserId(userId);
         newAccount.setAccountNo(generateRandomNumber());
+
+        if(newAccount.getAccountType() == null)
+            return Response.status(Response.Status.PARTIAL_CONTENT).entity("{\"status\":\"failed\", \"reason\":\"Not enough values\"}").build();
+
         String insertQuery = "insert into account(balance,account_type,user_id,account_no) values ('"+
                 newAccount.getBalance() + "','" +
                 newAccount.getAccountType().getId() + "','" + newAccount.getUserId() + "','"+ newAccount.getAccountNo() + "')";
@@ -113,33 +106,39 @@ public class AccountService {
     }
 
     @PUT
-    public Response updateAccount(Account account) {
+    public Response updateAccount(Account account) throws Exception {
 
-        StringBuilder updateQuery = new StringBuilder();
-        updateQuery.append("update account set ");
-        if (account.getAccountType() != null){
-            updateQuery.append("account_type=").append(account.getAccountType().getId());
-        }
+        ArrayList<String> queryStrings = new ArrayList<>();
 
-        if(account.getAccountType() != null && account.getBalance() > 0){
-            updateQuery.append(",");
-        }
+        if(account.getAccountType() != null)
+            queryStrings.add("account_type="+account.getAccountType().getId());
+        if(account.getBalance() > 0)
+            queryStrings.add("balance="+account.getBalance());
 
-        if(account.getBalance() > 0){
-            updateQuery.append("balance=").append(account.getBalance());
-        }
-        updateQuery.append("where id=").append(account.getId()).append(";");
+        if(queryStrings.size() == 0 || account.getId() == 0)
+            return Response.status(Response.Status.PARTIAL_CONTENT).entity("{\"status\":\"failed\", \"reason\":\"Not enough values\"}").build();
+
+        if(!verifyAccount(account.getId()))
+            return Response.status(Response.Status.UNAUTHORIZED).entity("{\"status\":\"failed\", \"reason\":\"Invalid Account ID\"}").build();
+
+        String updateQuery = "update account set " + StringUtils.join(queryStrings, ",") + " where id="+account.getId() +";";
 
         try {
-            DbConnector.update(updateQuery.toString());
+            DbConnector.update(updateQuery);
         } catch (Exception e) {
             e.printStackTrace();
             return Response.serverError().build();
         }
+
         return Response.ok().entity(account).build();
 
     }
 
+
+    private boolean verifyAccount(int accountId) throws Exception {
+        String accountCheckQuery = "select 1 from account where id="+accountId+" and user_id="+userId+";";
+        return (Boolean) DbConnector.get(accountCheckQuery, ResultSet::next);
+    }
 
 
     private int generateRandomNumber() {
