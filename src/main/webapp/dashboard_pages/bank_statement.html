@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bank Statements</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<!--  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/5.1.0/css/bootstrap.min.css">-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <script src="https://kit.fontawesome.com/3cd6602617.js" crossorigin="anonymous"></script>
+  <script src='/js/knockout-3.5.1.js'></script>
+  <script src="/js/knockout.mapping-latest.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <link rel="stylesheet" href="/css/dashboard_style.css">
+  <style>
+    .container {
+      margin-top: 10px;
+    }
+
+    .table td,
+    .table th {
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-control {
+      display: inline-block;
+      margin-right: 10px;
+      width: auto;
+    }
+
+    .filter-label {
+      margin-right: 10px;
+    }
+
+    .filter-btn {
+      margin-right: 10px;
+    }
+
+    .no-data {
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+
+</head>
+<body>
+<div id="wrapper">
+  <div id="sidebar"></div>
+  <section id="content-wrapper">
+<div class="container">
+  <h1 class="text-center mb-4">Bank Statements</h1>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      <div class="form-group">
+        <label class="filter-label">Created Date:</label>
+        <input type="date" class="form-control" data-bind="value: filters.createdDate">
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="form-group">
+        <label class="filter-label">Mode of Payment:</label>
+        <select class="form-control" data-bind="value: filters.modeOfPayment">
+          <option value="">All</option>
+          <option value="1">UPI</option>
+          <option value="2">Bank Transfer</option>
+          <option value="3">ATM</option>
+        </select>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="form-group">
+        <label class="filter-label">Transaction Type:</label>
+        <select class="form-control" data-bind="value: filters.transactionType">
+          <option value="">All</option>
+          <option value="1">Credit</option>
+          <option value="2">Debit</option>
+        </select>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="form-group">
+        <label class="filter-label">Transaction Status:</label>
+        <select class="form-control" data-bind="value: filters.transactionStatus">
+          <option value="">All</option>
+          <option value="1">Processing</option>
+          <option value="2">Success</option>
+          <option value="3">Failed</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <div class="form-group">
+        <label class="filter-label">Account Number:</label>
+        <input type="text" class="form-control" data-bind="value: filters.accountNumber">
+      </div>
+    </div>
+    <div class="col-md-8 text-end">
+<!--      <button class="btn btn-primary filter-btn" data-bind="click: applyFilters">Apply Filters			</button>-->
+      <button class="btn btn-secondary filter-btn" data-bind="click: clearFilters">Clear Filters</button>
+    </div>
+  </div>
+
+  <table id="statementTable" class="table table-bordered table-striped">
+    <thead>
+    <tr>
+      <th>#</th>
+      <th>Account Number</th>
+      <th>Created Date</th>
+      <th>Mode of Payment</th>
+      <th>Transaction Type</th>
+      <th>Amount ( &euro; )</th>
+      <th>To Account Number</th>
+      <th>Transaction Status</th>
+    </tr>
+    </thead>
+    <tbody data-bind="foreach: pagedTransactions">
+    <tr>
+      <td data-bind="text: $index() + 1"></td>
+      <td data-bind="text: accountNumber"></td>
+      <td data-bind="text: $root.formatDate(createdDate)"></td>
+      <td data-bind="text: $root.getModeOfPayment(modeOfPayment)"></td>
+      <td data-bind="text: $root.getTransactionType(transactionType)"></td>
+      <td data-bind="text: $root.formatAmount(amount)"></td>
+      <td data-bind="text: toAccountNumber"></td>
+      <td data-bind="text: $root.getTransactionStatus(transactionStatus)"></td>
+    </tr>
+    </tbody>
+  </table>
+  <div class="no-data" data-bind="visible: filteredTransactions().length === 0">
+    No transactions recorded.
+  </div>
+
+  <ul class="pagination">
+    <li class="page-item" data-bind="css: { disabled: pageIndex() === 0 }">
+      <a class="page-link" href="#" data-bind="click: prevPage">&laquo;</a>
+    </li>
+    <!-- ko foreach: pages -->
+    <li class="page-item" data-bind="css: { active: $data === $parent.pageIndex }">
+      <a class="page-link" href="#" data-bind="text: $data + 1, click: function() { $parent.pageIndex($data); }"></a>
+    </li>
+    <!-- /ko -->
+    <li class="page-item" data-bind="css: { disabled: pageIndex() === maxPageIndex() }">
+      <a class="page-link" href="#" data-bind="click: nextPage">&raquo;</a>
+    </li>
+  </ul>
+
+
+
+  <button class="btn btn-primary" id="export" data-bind=" click: $root.exportPDF()">Export as PDF</button>
+
+
+</div>
+  </section>
+</div>
+<!-- Knockout.js and custom JS -->
+<script>
+  // Define a view model for the page
+  window.jsPDF = window.jspdf.jsPDF;
+
+  $(document).ready(function() {
+
+    $("#sidebar").load("/dashboard_pages/common/sidebar.html");
+
+    function BankStatementsViewModel() {
+      var self = this;
+
+      // Initialize observables and default values
+      self.transactions = ko.observableArray([]);
+
+
+
+      self.filters = {
+        createdDate: ko.observable(),
+        modeOfPayment: ko.observable(),
+        transactionType: ko.observable(),
+        transactionStatus: ko.observable(),
+        accountNumber: ko.observable()
+      };
+
+      self.modeOfPaymentMap = {
+        1: 'UPI',
+        2: 'Bank Transfer',
+        3: 'ATM'
+      };
+
+      self.transactionTypeMap = {
+        1: 'Credit',
+        2: 'Debit'
+      };
+
+      self.transactionStatusMap = {
+        1: 'Processing',
+        2: 'Success',
+        3: 'Failed'
+      };
+
+
+      self.filteredTransactions = ko.computed(function () {
+        var result = self.transactions();
+
+        // Apply filters
+        if (self.filters.createdDate()) {
+          var d = new Date(self.filters.createdDate());
+          result = result.filter(function (item) {
+            var s = self.formatDate(item.createdDate);
+            var n = self.formatDate(d);
+            return s.split(',')[0] === n.split(',')[0];
+          });
+        }
+
+        if (self.filters.modeOfPayment()) {
+          result = result.filter(function (item) {
+            return item.modeOfPayment == self.filters.modeOfPayment();
+          });
+        }
+
+        if (self.filters.transactionType()) {
+          result = result.filter(function (item) {
+            return item.transactionType == self.filters.transactionType();
+          });
+        }
+
+        if (self.filters.transactionStatus()) {
+          result = result.filter(function (item) {
+            return item.transactionStatus == self.filters.transactionStatus();
+          });
+        }
+
+        if (self.filters.accountNumber()) {
+          result = result.filter(function (item) {
+            return item.accountNumber == self.filters.accountNumber();
+          });
+        }
+
+        return result;
+      });
+
+      self.pageIndex = ko.observable(0);
+      self.pageSize = 20;
+
+      self.maxPageIndex = ko.computed(function () {
+        return Math.ceil(self.filteredTransactions().length / self.pageSize) - 1;
+      });
+
+      self.pages = ko.computed(function () {
+        var pageCount = self.maxPageIndex() + 1;
+        var pages = [];
+        for (var i = 0; i < pageCount; i++) {
+          pages.push(i);
+        }
+        return pages;
+      });
+
+      self.nextPage = function () {
+        if (self.pageIndex() < self.maxPageIndex()) {
+          self.pageIndex(self.pageIndex() + 1);
+        }
+      };
+
+
+      self.prevPage = function () {
+        if (self.pageIndex() > 0) {
+          self.pageIndex(self.pageIndex() - 1);
+        }
+      };
+
+      self.exportPDF = function () {
+        if (self.transactions().length !== 0) {
+          var doc = new jsPDF();
+          doc.autoTable({html: '#statementTable'});
+          doc.save("bank_statements.pdf");
+        }
+      };
+
+      $.ajax({
+          url: "/api/" +  localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/transaction/list",
+        type: 'GET',
+        headers: {
+          "Authorization": "Bearer " + localStorage.getItem("token")
+        },
+        data: {userId: localStorage.getItem("userId")},
+        success: function (data) {
+          self.transactions(data);
+        },
+        error: function (jqXHR, exception) {
+          var msg = '';
+          if (jqXHR.status === 0) {
+            msg = 'Not connect.\n Verify Network.';
+          } else if (jqXHR.status === 401) {
+            msg = 'UnAuthorized , Login Again';
+          }
+          // alert(msg);
+          // location.href = '/';
+        }
+      });
+
+      self.getModeOfPayment = function (id) {
+        return self.modeOfPaymentMap[id];
+      }
+
+      self.getTransactionType = function (id) {
+        return self.transactionTypeMap[id];
+      }
+
+      self.getTransactionStatus = function (id) {
+        return self.transactionStatusMap[id];
+      }
+
+      // Format date as IST from millis
+      self.formatDate = function (millis) {
+        var date = new Date(millis);
+        var options = {timeZone: 'Asia/Kolkata'};
+        return date.toLocaleString('en-IN', options);
+      };
+
+      // Format amount with rupee symbol
+      self.formatAmount = function (amount) {
+        return amount.toFixed(2);
+      };
+
+      self.pagedTransactions = ko.computed(function () {
+        var firstIndex = self.pageIndex() * self.pageSize;
+        return self.filteredTransactions().slice(firstIndex, firstIndex + self.pageSize);
+      });
+
+      // Computed observable for filtered transactions
+      try{
+        var preFilter = window.location.href.split("#")[1];
+        if(preFilter === "bank"){
+          self.filters.modeOfPayment("2");
+        }else if (preFilter === "upi"){
+          self.filters.modeOfPayment("1");
+        }
+      }catch (e){
+        console.log(e);
+      }
+
+
+      // Clear all filters
+      self.clearFilters = function () {
+        self.filters.createdDate(null);
+        self.filters.modeOfPayment(null);
+        self.filters.transactionType(null);
+        self.filters.transactionStatus(null);
+        self.filters.accountNumber(null);
+      };
+    }
+
+    // Apply bindings to view model
+    ko.applyBindings(new BankStatementsViewModel());
+  });
+</script>
+</body>
+</html>
+

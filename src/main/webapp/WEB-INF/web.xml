@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This web.xml file is not required when using Servlet 3.0 container,
      see implementation details http://jersey.java.net/nonav/documentation/latest/jax-rs.html -->
-<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
     <servlet>
         <servlet-name>Jersey Web Application</servlet-name>
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
@@ -13,6 +14,98 @@
     </servlet>
     <servlet-mapping>
         <servlet-name>Jersey Web Application</servlet-name>
-        <url-pattern>/*</url-pattern>
+        <url-pattern>/api/*</url-pattern>
     </servlet-mapping>
+
+    <servlet>
+        <servlet-name>Login</servlet-name>
+        <jsp-file>/home_pages/login_page.html</jsp-file>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Login</servlet-name>
+        <url-pattern></url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Login</servlet-name>
+        <url-pattern>/login_page</url-pattern>
+    </servlet-mapping>
+
+
+    <servlet>
+        <servlet-name>Signup</servlet-name>
+        <jsp-file>/home_pages/register_page.html</jsp-file>
+    </servlet>
+
+    <servlet>
+        <servlet-name>Customer Dashboard</servlet-name>
+        <jsp-file>/dashboard_pages/dashboard.html</jsp-file>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Customer Dashboard</servlet-name>
+        <url-pattern>/customer/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Customer Dashboard</servlet-name>
+        <url-pattern>/employee/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Signup</servlet-name>
+        <url-pattern>/signup_page</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>Bank Statement</servlet-name>
+        <jsp-file>/dashboard_pages/bank_statement.html</jsp-file>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Bank Statement</servlet-name>
+        <url-pattern>/customer/bank_statement</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Bank Statement</servlet-name>
+        <url-pattern>/employee/bank_statement</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>Transfer Money</servlet-name>
+        <jsp-file>/dashboard_pages/transfer_money.html</jsp-file>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Transfer Money</servlet-name>
+        <url-pattern>/customer/transfer_money</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>Accounts Manage</servlet-name>
+        <jsp-file>/dashboard_pages/accounts.html</jsp-file>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Accounts Manage</servlet-name>
+        <url-pattern>/customer/accounts</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Accounts Manage</servlet-name>
+        <url-pattern>/employee/accounts</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>Customers</servlet-name>
+        <jsp-file>/dashboard_pages/customer.html</jsp-file>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Customers</servlet-name>
+        <url-pattern>/employee/customers</url-pattern>
+    </servlet-mapping>
+
 </web-app>

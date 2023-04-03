@@ -2,6 +2,7 @@ package services.authentication;
 
 import com.mysql.cj.exceptions.WrongArgumentException;
 import connectors.DbConnector;
+import models.enums.UserType;
 import services.Secured;
 
 import javax.annotation.Priority;
@@ -70,7 +71,14 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
         if(userType == null || token.equals("null"))
             throw new WrongArgumentException();
-        String query = "select 1 from user where id='" + userId + "' and token='" + token + "';";;
+
+        UserType userTypeVal = UserType.getTypeByPath(userType);
+
+        String query = "select 1 from user where id='" + userId + "' and token='" + token + "';";
+
+        if (userTypeVal == UserType.EMPLOYEE)
+            query = "select 1 from user where id='" + userId + "' and token='" + token + "' and is_employee=true;";
+
         return (Boolean) DbConnector.get(query, ResultSet::next);
     }
 

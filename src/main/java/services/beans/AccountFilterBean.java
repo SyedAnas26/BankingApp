@@ -6,9 +6,14 @@ import javax.ws.rs.QueryParam;
 import java.util.Date;
 
 public class AccountFilterBean {
-    @QueryParam("startDate") Date startDate;
-    @QueryParam("endDate") Date endDate;
-    @QueryParam("accountType") int accountType;
+    @QueryParam("startDate")
+    Date startDate;
+    @QueryParam("endDate")
+    Date endDate;
+    @QueryParam("accountType")
+    int accountType;
+    @QueryParam("userId")
+    int userId;
 
     public Date getStartDate() {
         return startDate;
@@ -39,25 +44,28 @@ public class AccountFilterBean {
 
         StringBuilder query = new StringBuilder();
 
-        if (this.startDate != null && this.endDate != null){
+        if (this.startDate != null && this.endDate != null) {
             query.append("select * from account where created_date >='").append(this.startDate).append("' and created_date <'").append(this.endDate).append("'");
         }
 
-        if(this.accountType > 0){
-            if(query.length() == 0)
+        if (this.accountType > 0) {
+            if (query.length() == 0)
                 query.append("select * from account where account_type='").append(this.accountType).append("'");
             else
                 query.append("and account_type='").append(this.accountType).append("'");
         }
 
-        if(UserType.getTypeByPath(userType) == UserType.CUSTOMER){
-            if(query.length() == 0)
+
+        if (UserType.getTypeByPath(userType) == UserType.CUSTOMER || (this.userId > 0 && UserType.getTypeByPath(userType) == UserType.CUSTOMER)) {
+            if (query.length() == 0)
                 query.append("select * from account where user_id='").append(userId).append("'");
             else
                 query.append("and user_id='").append(userId).append("'");
-        }else if(query.length() == 0) {
+        } else if (query.length() == 0) {
             query.append("select * from account");
         }
+
+        System.out.println(query);
 
         return query.toString();
     }

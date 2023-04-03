@@ -16,6 +16,16 @@ public class Account {
     private Date creationDate;
     private AccountType accountType;
 
+    private String upiId;
+
+    public String getUpiId() {
+        return upiId;
+    }
+
+    public void setUpiId(String upiId) {
+        this.upiId = upiId;
+    }
+
     public int getId() {
         return id;
     }
@@ -64,6 +74,7 @@ public class Account {
         this.accountType = accountType;
     }
 
+
     public void setValuesFromResultSet(ResultSet rs) throws SQLException {
         this.id = rs.getInt("id");
         this.balance =rs.getFloat("balance");
@@ -71,5 +82,6 @@ public class Account {
         this.userId = rs.getInt("user_id");
         this.creationDate = rs.getDate("created_date");
         this.accountNo = rs.getInt("account_no");
+        this.upiId = rs.getString("upi_id");
     }
 }

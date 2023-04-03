@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Accounts</title>
+    <!-- Bootstrap 5 stylesheet -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="https://kit.fontawesome.com/3cd6602617.js" crossorigin="anonymous"></script>
+    <script src='/js/knockout-3.5.1.js'></script>
+    <script src="/js/knockout.mapping-latest.js"></script>
+    <link rel="stylesheet" href="/css/dashboard_style.css">
+
+</head>
+<body>
+<div id="wrapper">
+    <div id="sidebar"></div>
+    <section id="content-wrapper">
+        <div class="container">
+            <h1 class="text-center">Accounts</h1>
+            <hr>
+
+            <!-- Create New Account Card -->
+            <!-- ko if: isEmployee() === false -->
+            <div class="card my-4">
+                <div class="card-header">
+                    <button class="btn btn-link" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#createNewAccount" aria-expanded="true" aria-controls="createNewAccount">
+                        Create New Account
+                    </button>
+                </div>
+                <div class="collapse show" id="createNewAccount" data-bs-parent="#accordion">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="accountType">Account Type:</label>
+                                <select class="form-select" id="accountType" data-bind="value: accountType">
+                                    <option value="1">Salary</option>
+                                    <option value="2">Savings</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" style="margin-top: 23px;">
+                                <button type="button" class="btn btn-primary" data-bind="click: createAccount">Create
+                                    Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /ko -->
+
+            <div class="col-md-4" style="margin-bottom: 20px">
+                <div class="form-group">
+                    <label class="filter-label">Search with Account Number: </label>
+                    <input type="text" class="form-control" data-bind="value: accountNumber">
+                </div>
+            </div>
+
+            <!-- Accounts List -->
+            <div class="card">
+                <div class="card-header">
+                    Accounts
+                </div>
+                <div class="card-body">
+                    <div class="row row-cols-1 row-cols-md-3 g-4" data-bind="foreach: filteredAccountList">
+                        <div class="col">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title"><b>Account Number:</b> <span
+                                            data-bind="text: accountNo"></span></h5>
+                                    <p class="card-text"><b>Account Type: </b><span
+                                            data-bind="text: $root.getAccountType(accountType)"></span></p>
+                                    <p class="card-text"><b>Balance: </b><span data-bind="text: balance"></span></p>
+                                    <p class="card-text"><b>UPI ID: </b><span data-bind="text: upiId"></span></p>
+                                    <p class="card-text"><b>Created Date: </b><span
+                                            data-bind="text: $root.getDate(creationDate)"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+<!-- Knockout JS library -->
+
+<script>
+
+    $(document).ready(function () {
+
+        $("#sidebar").load("/dashboard_pages/common/sidebar.html");
+        var viewModel = function () {
+            var self = this;
+
+            // Observable variables
+            self.accountType = ko.observable();
+            self.accountList = ko.observableArray([]);
+            self.isEmployee = ko.observable(localStorage.getItem("isEmployee"))
+            self.accountNumber = ko.observable();
+
+            // Load account list from API on page load
+            $.ajax({
+                url: "/api/" +  localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/account/list",
+                type: 'GET',
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("token")
+                },
+                data: {userId: localStorage.getItem("userId")},
+                success: function (data) {
+                    self.accountList(data);
+                },
+                error: function (jqXHR, exception) {
+                    var msg = '';
+                    if (jqXHR.status === 0) {
+                        msg = 'Not connect.\n Verify Network.';
+                    } else if (jqXHR.status === 401) {
+                        msg = 'UnAuthorized , Login Again';
+                    }
+                    alert(msg);
+                    location.href = '/';
+                }
+            });
+
+            self.getDate = function (millis) {
+                var date = new Date(millis);
+                var options = {timeZone: 'Asia/Kolkata'};
+                return date.toLocaleString('en-IN', options);
+            };
+
+            // Create account function
+            self.createAccount = function () {
+                var d = {accountType: self.accountType()}
+                $.ajax({
+                    url: "/api/" +  localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/account/",
+                    type: 'POST',
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("token")
+                    },
+                    data: JSON.stringify(d),
+                    contentType: "application/json",
+                    success: function (response) {
+                        alert("Successfully created account")
+                        self.accountList.push(response);
+                        self.accountType(null);
+                    }
+                });
+            };
+
+            self.filteredAccountList = ko.computed(function () {
+                var result = self.accountList();
+                if(self.accountNumber())
+                    return result.filter(function (acc){
+                        return acc.accountNo.toString().includes(self.accountNumber())
+                    });
+                return result;
+            })
+
+            self.getAccountType = function (id) {
+                return id == 1 ? "Salary" : "Savings";
+            }
+        };
+
+        ko.applyBindings(new viewModel());
+    });
+</script>
+</body>
+</html>

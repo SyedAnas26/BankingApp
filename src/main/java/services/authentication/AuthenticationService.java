@@ -1,5 +1,6 @@
 package services.authentication;
 
+import com.owlike.genson.annotation.JsonIgnore;
 import connectors.DbConnector;
 import models.User;
 import services.Secured;
@@ -25,24 +26,27 @@ public class AuthenticationService {
     public Response authenticateUser(@FormParam("email") String email,
                                      @FormParam("password") String password) throws Exception {
 
-        if(isAuthenticated(email,password)){
+        System.out.println(email);
+        System.out.println(password);
+
+        if (isAuthenticated(email, password)) {
             String token = generateToken();
-            String updateQuery = "update user set token ='"+token+"' where email='"+email+"'";
+            String updateQuery = "update user set token ='" + token + "' where email='" + email + "'";
             DbConnector.update(updateQuery);
 
-            String adminQuery = "select * from user where email='"+email+"' and password='"+password+"';";
+            String adminQuery = "select * from user where email='" + email + "' and password='" + password + "';";
             User loggedUser = (User) DbConnector.get(adminQuery, rs -> {
-                if(rs.next()) {
+                if (rs.next()) {
                     User user = new User();
                     user.setId(rs.getInt("id"));
-                    user.setAdmin(rs.getBoolean("is_employee"));
+                    user.setIsEmployee(rs.getBoolean("is_employee"));
                     return user;
                 }
                 return null;
             });
-            return Response.ok().entity("{\"token\":\""+token +"\",\"isAdmin\":\""+loggedUser.getAdmin() +"\", \"userId\":\""+ loggedUser.getId()+"\" }").build();
-        }else
-            return Response.status(Response.Status.UNAUTHORIZED).entity("{\"status\":\"failed\", \"reason\":\"invalid credentials\"}").build();
+            return Response.ok().entity("{\"status\":\"success\", \"token\":\"" + token + "\",\"isEmployee\":\"" + loggedUser.getIsEmployee() + "\", \"userId\":\"" + loggedUser.getId() + "\" }").build();
+        } else
+            return Response.ok().entity("{\"status\":\"failed\", \"reason\":\"Invalid credentials\"}").build();
     }
 
 
@@ -53,14 +57,14 @@ public class AuthenticationService {
                                  @FormParam("firstName") String firstName,
                                  @FormParam("lastName") String lastName) throws Exception {
 
-        String query = "insert into user(email,first_name,last_name,password) values ( '"+email+"','"+firstName+"','"+
-                lastName+"','"+password+"')";
+        String query = "insert into user(email,first_name,last_name,password) values ( '" + email + "','" + firstName + "','" +
+                lastName + "','" + password + "')";
         try {
             int userId = DbConnector.insert(query);
-            return Response.ok().entity("{\"status\":\"success\", \"userId\": \" "+userId+ "\"}").build();
-        }catch(SQLIntegrityConstraintViolationException e){
-            return Response.status(Response.Status.CONFLICT).entity("{\"status\":\"failed\", \"reason\":\"Email should be unique\"}").build();
-        }catch (Exception e){
+            return Response.ok().entity("{\"status\":\"success\", \"userId\": \" " + userId + "\"}").build();
+        } catch (SQLIntegrityConstraintViolationException e) {
+            return Response.status(Response.Status.NO_CONTENT).entity("{\"status\":\"failed\", \"reason\":\"Email should be unique\"}").build();
+        } catch (Exception e) {
             e.printStackTrace();
             return Response.serverError().build();
         }
@@ -72,17 +76,17 @@ public class AuthenticationService {
     @POST
     public Response logoutUser(User user, @PathParam("id") int id) throws Exception {
         try {
-            String updateQuery = "update user set token ='"+null+"' where id='"+id+"'";
+            String updateQuery = "update user set token ='" + null + "' where id='" + id + "'";
             DbConnector.update(updateQuery);
             return Response.ok().entity("{\"status\":\"success\"}").build();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return Response.serverError().build();
         }
     }
 
     private boolean isAuthenticated(String email, String password) throws Exception {
-        String query = "select 1 from user where email='"+email+"' and password='"+password+"';";
+        String query = "select 1 from user where email='" + email + "' and password='" + password + "';";
         return (Boolean) DbConnector.get(query, ResultSet::next);
     }
 

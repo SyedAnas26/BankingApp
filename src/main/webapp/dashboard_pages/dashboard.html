@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Banking Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="https://kit.fontawesome.com/3cd6602617.js" crossorigin="anonymous"></script>
+    <script src='/js/knockout-3.5.1.js'></script>
+    <script src="/js/knockout.mapping-latest.js"></script>
+    <link rel="stylesheet" href="/css/dashboard_style.css">
+</head>
+<body>
+<div id="wrapper">
+    <div id="sidebar"></div>
+    <section id="content-wrapper">
+        <div class="container mt-4">
+            <!-- Card #1: Account Balance Dropdown -->
+            <div class="card mb-3" data-bind="visible: !isEmployee()">
+                <div class="card-body">
+                    <h5 class="card-title">Select Account ID</h5>
+                    <div class="input-group mb-3">
+                        <label class="input-group-text" for="account-select">Account ID:</label>
+                        <select class="form-select" id="account-select"
+                                data-bind="options: accounts, optionsText: 'accountNo', optionsCaption: 'Select an account', value: selectedAccount"></select>
+                    </div>
+                    <p class="card-text">Balance: Rs.<span data-bind="text: selectedBalance"/></p>
+                </div>
+            </div>
+            <!-- Card #2: Account Count -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title font-weight-bold">Total Accounts</h5>
+                    <p class="card-text">Total accounts created = <span data-bind="text: accountCount"></span></p>
+                    <a data-bind="attr: { href: accountPath }" class="card-link">View accounts</a>
+                </div>
+            </div>
+            <!-- Card #3: Transaction Count -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title font-weight-bold">Total Transactions</h5>
+                    <p class="card-text">Total transactions made = <span data-bind="text: transactionCount"></span></p>
+                    <a data-bind="attr: { href: transactionPath }" class="card-link">View transactions</a>
+                </div>
+            </div>
+            <!-- Card #4: Bank Transfer Count -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title font-weight-bold">Total Bank Transfers</h5>
+                    <p class="card-text">Total Bank transfers made = <span data-bind="text: bankTransferCount"></span>
+                    </p>
+                    <a data-bind="attr: { href: bankTransferPath }" class="card-link">View bank transfers</a>
+                </div>
+            </div>
+            <!-- Card #5: UPI Transfer Count -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title font-weight-bold">Total UPI Transfers</h5>
+                    <p class="card-text">Total UPI transfers made = <span data-bind="text: upiTransferCount"></span></p>
+                    <a data-bind="attr: { href: upiTransferPath }" class="card-link">View UPI transfers</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $("#sidebar").load("/dashboard_pages/common/sidebar.html");
+
+// Set up the ViewModel
+        function BankingViewModel() {
+            var self = this;
+            self.isEmployee = ko.observable(localStorage.getItem("isEmployee") === "true");
+            self.accounts = ko.observableArray([]);
+            self.selectedAccount = ko.observable();
+            self.selectedBalance = ko.observable(0);
+            self.accountCount = ko.observable("");
+            self.transactionCount = ko.observable(0);
+            self.bankTransferCount = ko.observable(0);
+            self.upiTransferCount = ko.observable(0);
+
+            self.transactionPath = ko.observable("/" + localStorage.getItem("userType") + "/bank_statement");
+            self.accountPath = ko.observable("/" + localStorage.getItem("userType") + "/accounts");
+            self.bankTransferPath = ko.observable("/" + localStorage.getItem("userType") + "/bank_statement#bank");
+            self.upiTransferPath = ko.observable("/" + localStorage.getItem("userType") + "/bank_statement#upi");
+
+            $.ajax({
+                url: "/api/" +  localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/dashboardData/",
+                type: 'GET',
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("token")
+                },
+                data: {userId: localStorage.getItem("userId")},
+                success: function (response) {
+                    console.log(response)
+                    if (!self.isEmployee())
+                        self.accounts(response.accountList);
+                    self.accountCount(response.accountsCount);
+                    self.transactionCount(response.transactionCount);
+                    self.bankTransferCount(response.bankTransferCount);
+                    self.upiTransferCount(response.upiTransferCount);
+                    console.log(self.accountCount())
+                }, error: function (jqXHR, exception) {
+                    var msg = '';
+                    if (jqXHR.status === 0) {
+                        msg = 'Not connect.\n Verify Network.';
+                    } else if (jqXHR.status === 401) {
+                        msg = 'UnAuthorized , Login Again';
+                    }
+                }
+            });
+
+            // Update the selectedBalance when the selectedAccount changes
+            self.selectedAccount.subscribe(function (account) {
+                var selectedAccount = ko.utils.arrayFirst(self.accounts(), function (item) {
+                    return item.accountNo === account.accountNo;
+                });
+                if (selectedAccount) {
+                    self.selectedBalance(selectedAccount.balance);
+                }
+            });
+        }
+
+        // Apply the ViewModel bindings
+        ko.applyBindings(new BankingViewModel());
+    });
+</script>
+</body>
+</html>

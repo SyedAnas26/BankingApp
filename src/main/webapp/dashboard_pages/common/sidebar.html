@@ -1,0 +1,103 @@
+<style>
+    .sidebar-nav > li {
+        margin-top: 10px;
+    }
+</style>
+
+
+<aside id="sidebar-wrapper">
+    <div class="sidebar-brand">
+        <h2>Zoho Bank</h2>
+    </div>
+    <ul id="customerNav" class="sidebar-nav">
+        <li id="dashboard">
+            <a href="dashboard"><i class="fa fa-home"></i>DashBoard</a>
+        </li>
+        <li id="books_manager">
+            <a href="bank_statement"><i class="fa fa-tasks"></i>Bank Statements</a>
+        </li>
+        <li id="transfer_money">
+            <a href="transfer_money"><i class="fa fa-retweet"></i>Transfer Money</a>
+        </li>
+        <li id="account">
+            <a href="accounts"><i class="fa fa-book"></i>Accounts</a>
+        </li>
+        <li>
+            <a href="#" onclick="logout()"><i class="fa fa-sign-out"></i>Logout</a>
+        </li>
+    </ul>
+
+    <ul id="employeeNav" class="sidebar-nav">
+        <li id="e-dashboard">
+            <a href="dashboard"><i class="fa fa-home"></i>DashBoard</a>
+        </li>
+        <li id="transactions">
+            <a href="bank_statement"><i class="fa fa-tasks"></i>View Transactions</a>
+        </li>
+        <li id="customers">
+            <a href="customers"><i class="fa fa-user-friends"></i>View Customers</a>
+        </li>
+        <li id="accounts">
+            <a href="accounts"><i class="fa fa-book"></i>View Accounts</a>
+        </li>
+        <li>
+            <a href="#" onclick="logout()"><i class="fa fa-sign-out"></i>Logout</a>
+        </li>
+    </ul>
+</aside>
+
+
+<div id="navbar-wrapper">
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a href="#" class="navbar-brand" id="sidebar-toggle"><i class="fa fa-bars"></i></a>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<script>
+
+    $(document).ready(function () {
+        var isEmployee = localStorage.getItem("isEmployee");
+        if(isEmployee === "true")
+            $("#customerNav").hide();
+        else
+            $("#employeeNav").hide();
+    });
+
+    function logout() {
+        var d = {"userId": localStorage.getItem("userId")}
+        $.ajax({
+            url: "/api/auth/" + localStorage.getItem("userId") + "/logout",
+            type: 'POST',
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem("token")
+            },
+            data: JSON.stringify(d),
+            contentType: "application/json",
+            success: function (response) {
+                if (response.status === "success") {
+                    localStorage.setItem("userId", null);
+                    localStorage.setItem("token", null);
+                    localStorage.setItem("isEmployee", null);
+                    location.href = '/';
+                } else {
+                    alert("Some error occurred")
+                }
+            }
+        });
+
+    }
+
+    const $button = document.querySelector('#sidebar-toggle');
+    const $wrapper = document.querySelector('#wrapper');
+
+    $button.addEventListener('click', (e) => {
+        e.preventDefault();
+        $wrapper.classList.toggle('toggled');
+    });
+
+
+</script>

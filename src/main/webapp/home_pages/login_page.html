@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking System</title>
+
+    <!-- BOOTSTRAP INCLUDES -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <!-- JQUERY INCLUDES -->
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+
+    <!--- CSS INCLUDES -->
+    <link rel="stylesheet" href="css/home_style.css">
+
+</head>
+<header id="header"></header>
+
+<body>
+
+
+    <div class="row d-flex justify-content-center align-items-center" style="margin:30px">
+        <div class="col-xl-4">
+            <div class="card" style="border-radius: 15px;">
+                <div class="card-body p-5">
+                    <h3 class="text-uppercase text-center mb-5">Login</h3>
+                    <form id="loginForm" action="/api/auth/login" method="post">
+                        <div class="form-outline mb-4">
+                            <label class="form-label" for="email">Your Email</label>
+                            <input type="email" id="email" name="email" class="form-control form-control-lg" />
+                        </div>
+
+                        <div class="form-outline mb-4">
+                            <label class="form-label" for="pass">Password</label>
+                            <input type="password" id="pass" name="password" class="form-control form-control-lg" />
+                        </div>
+                        <div class="d-flex justify-content-center">
+                            <button type="submit"
+                                class="btn btn-success btn-block btn-lg gradient-custom-4 text-body">Login</button>
+                        </div>
+                        <p class="text-center text-muted mt-5 mb-0">Dont have an account? <a href="signup_page"
+                                class="fw-bold text-body"><u>Register here</u></a></p>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+
+
+        // $.ajax({
+        //     url: "getUserId",
+        //     type: 'POST',
+        //     success: function (response) {
+        //         if (response.user_id !== 'null') {
+        //             localStorage.setItem("userId", response.user_id);
+        //             localStorage.setItem("name",response.name);
+        //             localStorage.setItem("isAdmin",response.isAdmin);
+        //             location = "dashboard";
+        //         }
+        //     }
+        // });
+
+        function validate() {
+            var email = document.getElementById("email").value;
+            var password = document.getElementById("pass").value;
+            if (!email || email.trim() === "") {
+                alert("Kindly fill your Email");
+                return false;
+            }else if (!password || password.trim() === "") {
+                alert("Kindly fill your Password");
+                return false;
+            }
+                return true;
+        }
+
+        $(function () {
+            $("#header").load("/home_pages/base/header.html");
+            $("#footer").load("/home_pages/base/footer.html");
+        });
+
+        $("#loginForm").submit(function(e) {
+            e.preventDefault();
+            if (validate()) {
+                $.post($(this).attr("action"), $(this).serialize() , function (data) {
+                    if (data.status === "success") {
+                        localStorage.setItem("isEmployee", data.isEmployee);
+                        localStorage.setItem("userType", data.isEmployee==="true"?"employee":"customer");
+                        localStorage.setItem("token", data.token);
+                        localStorage.setItem("userId", data.userId);
+                        if (data.isEmployee === "true")
+                            window.location.href = '/employee/dashboard';
+                        else
+                            window.location.href = '/customer/dashboard';
+                    } else {
+                        alert(data.reason)
+                    }
+                });
+            }
+        });
+
+
+        //     $.ajax({
+        //         url: "/api/auth/login",
+        //         type: 'POST',
+        //         data: $(this).serialize(),
+        //         success: function (data, statusText, xhr) {
+        //             console.log(data);
+        //             if(xhr.status === 200) {
+        //                 localStorage.setItem("isAdmin",data.isAdmin);
+        //                 localStorage.setItem("token", data.token);
+        //                 localStorage.setItem("userId",data.userId);
+        //                 if(data.isAdmin === "true")
+        //                     window.location.href = '/employee/dashboard';
+        //                 else
+        //                     window.location.href = '/customer/dashboard';
+        //             }else {
+        //                 alert(data.reason)
+        //             }
+        //
+        //
+        //         },
+        //         cache : false,
+        //         processData: false,
+        //     });
+        //     }
+
+
+    </script>
+
+</body>
+<footer style="position: absolute;left: 0;right: 0;bottom: 0;" id="footer"></footer>
+
+</html>

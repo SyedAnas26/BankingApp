@@ -11,11 +11,17 @@ import java.util.Date;
 public class Transaction {
     private int id;
     private int accountId;
+
+    private int accountNumber;
     private Date createdDate;
     private PaymentMode modeOfPayment;
     private TransactionType transactionType;
     private float amount;
     private TransactionStatus transactionStatus;
+
+    private int toAccountId;
+
+    private int toAccountNumber;
 
     public int getId() {
         return id;
@@ -73,6 +79,30 @@ public class Transaction {
         this.transactionStatus = transactionStatus;
     }
 
+    public int getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(int accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
+    public int getToAccountId() {
+        return toAccountId;
+    }
+
+    public void setToAccountId(int toAccountId) {
+        this.toAccountId = toAccountId;
+    }
+
+    public int getToAccountNumber() {
+        return toAccountNumber;
+    }
+
+    public void setToAccountNumber(int toAccountNumber) {
+        this.toAccountNumber = toAccountNumber;
+    }
+
     public void setValuesFromResultSet(ResultSet rs) throws SQLException {
         this.id = rs.getInt("id");
         this.transactionStatus = TransactionStatus.getStatusById(rs.getInt("transaction_status"));
@@ -81,5 +111,8 @@ public class Transaction {
         this.createdDate= rs.getDate("created_date");
         this.modeOfPayment= PaymentMode.getModeById(rs.getInt("mode_of_payment"));
         this.transactionType= TransactionType.getTypeById(rs.getInt("transaction_type"));
+        this.accountNumber = rs.getInt("account_no");
+        this.toAccountId = rs.getInt("to_account_id");
+        this.toAccountNumber = rs.getInt("to_account_no");
     }
 }

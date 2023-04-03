@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer List</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="https://kit.fontawesome.com/3cd6602617.js" crossorigin="anonymous"></script>
+    <script src='/js/knockout-3.5.1.js'></script>
+    <script src="/js/knockout.mapping-latest.js"></script>
+    <link rel="stylesheet" href="/css/dashboard_style.css">
+
+</head>
+<body>
+<div id="wrapper">
+    <div id="sidebar"></div>
+    <section id="content-wrapper">
+        <div class="container">
+            <h1>Customer List</h1>
+            <input type="text" class="form-control mb-3" placeholder="Search by name or email"
+                   data-bind="value: searchQuery, valueUpdate: 'input'">
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th data-bind="click: sortByName">Name</th>
+                    <th data-bind="click: sortByEmail">Email</th>
+                    <th data-bind="click: sortByTransactionsCount">Transactions Count</th>
+                    <th data-bind="click: sortByAccountsCount">Accounts Count</th>
+                    <th data-bind="click: sortByTotalMoneyHeld">Total Money Held</th>
+                </tr>
+                </thead>
+                <tbody data-bind="foreach: filteredCustomers">
+                <tr>
+                    <td><i class="fa fa-user"></i> <span data-bind="text: fullName"></span></td>
+                    <td data-bind="text: email"></td>
+                    <td data-bind="text: transactionsCount"></td>
+                    <td data-bind="text: accountsCount"></td>
+                    <td data-bind="text: totalMoneyHeld"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+<script>
+
+    $(document).ready(function () {
+        $("#sidebar").load("/dashboard_pages/common/sidebar.html");
+
+        function CustomerViewModel() {
+            var self = this;
+            self.customers = ko.observableArray([]);
+            self.searchQuery = ko.observable('');
+
+            self.filteredCustomers = ko.computed(function () {
+                var query = self.searchQuery().toLowerCase();
+                if (!query) {
+                    return self.customers();
+                } else {
+                    return ko.utils.arrayFilter(self.customers(), function (customer) {
+                        return (
+                            customer.fullName.toLowerCase().indexOf(query) !== -1 ||
+                            customer.email.toLowerCase().indexOf(query) !== -1
+                        );
+                    });
+                }
+            });
+
+            self.sortByName = function () {
+                self.customers.sort(function (a, b) {
+                    return a.fullName.localeCompare(b.fullName);
+                });
+            };
+
+            self.sortByEmail = function () {
+                self.customers.sort(function (a, b) {
+                    return a.email.localeCompare(b.email);
+                });
+            };
+
+            self.sortByTransactionsCount = function () {
+                self.customers.sort(function (a, b) {
+                    return a.transactionsCount - b.transactionsCount;
+                });
+            };
+
+            self.sortByAccountsCount = function () {
+                self.customers.sort(function (a, b) {
+                    return a.accountsCount - b.accountsCount;
+                });
+            };
+
+            self.sortByTotalMoneyHeld = function () {
+                self.customers.sort(function (a, b) {
+                    return a.totalMoneyHeld - b.totalMoneyHeld;
+                });
+            };
+
+            $.ajax({
+                url: "/api/" + localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/customerData/",
+                type: 'GET',
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("token")
+                },
+                data: {userId: localStorage.getItem("userId")},
+                success: function (data) {
+                    self.customers(data.map(function (customer) {
+                        return {
+                            fullName: customer.firstName + ' ' + customer.lastName,
+                            email: customer.email,
+                            transactionsCount: customer.transactionsCount,
+                            accountsCount: customer.accountsCount,
+                            totalMoneyHeld: customer.totalBalance
+                        };
+                    }));
+                }, error: function (jqXHR, exception) {
+                    var msg = '';
+                    if (jqXHR.status === 0) {
+                        msg = 'Not connect.\n Verify Network.';
+                    } else if (jqXHR.status === 401) {
+                        msg = 'UnAuthorized , Login Again';
+                    }
+                    // alert(msg);
+                    // location.href = '/';
+                }
+            });
+
+        }
+
+        ko.applyBindings(new CustomerViewModel());
+    });
+</script>
+</body>
+</html>

@@ -19,18 +19,18 @@ public class UpiTransferService {
     int userId;
 
     public UpiTransferService(String userType, int userId) {
-        this.userId= userId;
+        this.userId = userId;
         this.userType = userType;
     }
 
 
     @Path("/list")
     @GET
-    public Response getUpiTransferList(@BeanParam UpiTransferBean upiTransferBean)  throws Exception {
+    public Response getUpiTransferList(@BeanParam UpiTransferBean upiTransferBean) throws Exception {
 
         ArrayList<UpiTransfer> upiTransfers = new ArrayList<>();
 
-        String query =  upiTransferBean.getFilteredQuery(userType,userId);
+        String query = upiTransferBean.getFilteredQuery(userType, userId);
 
         DbConnector.get(query, rs -> {
             while (rs.next()) {
@@ -58,11 +58,11 @@ public class UpiTransferService {
             return newTransfer;
         });
 
-        if (upiTransfer.getId() == 0){
+        if (upiTransfer.getId() == 0) {
             return Response.status(404).entity("{\"status\":\"failed\", \"reason\":\"not found\"}").build();
         }
 
-        if(UserType.getTypeByPath(userType) == UserType.CUSTOMER && !verifyAccount(upiTransfer.getTransactionId())){
+        if (UserType.getTypeByPath(userType) == UserType.CUSTOMER && !verifyAccount(upiTransfer.getTransactionId())) {
             return Response.status(404).entity("{\"status\":\"failed\", \"reason\":\"Not accessible\"}").build();
         }
 
@@ -70,16 +70,15 @@ public class UpiTransferService {
     }
 
 
-
     @POST
     public Response createUpiId(UpiTransfer newTransfer) throws Exception {
 
-        if(!verifyAccount(newTransfer.getTransactionId()))
+        if (!verifyAccount(newTransfer.getTransactionId()))
             return Response.status(Response.Status.UNAUTHORIZED).entity("{\"status\":\"failed\", \"reason\":\"Invalid Transaction ID\"}").build();
 
-        String insertQuery = "insert into upi_transfer(transaction_id,upi_id) values ('"+
+        String insertQuery = "insert into upi_transfer(transaction_id,upi_id) values ('" +
                 newTransfer.getTransactionId() + "','" +
-                newTransfer.getUpiId()+  "')";
+                newTransfer.getUpiId() + "')";
 
         try {
             newTransfer.setId(DbConnector.insert(insertQuery));
@@ -93,7 +92,7 @@ public class UpiTransferService {
     }
 
     private boolean verifyAccount(int transactionId) throws Exception {
-        String accountCheckQuery = "select 1 from transaction as t inner join account as a on  t.account_id=a.id  and t.id = " + transactionId + " and a.user_id="+userId+";";
+        String accountCheckQuery = "select 1 from transaction as t inner join account as a on  t.account_id=a.id  and t.id = " + transactionId + " and a.user_id=" + userId + ";";
         return (Boolean) DbConnector.get(accountCheckQuery, ResultSet::next);
     }
 
@@ -103,13 +102,13 @@ public class UpiTransferService {
 
         ArrayList<String> strings = new ArrayList<>();
 
-        if(upiTransfer.getUpiId() != null)
-            strings.add("upi_id='"+upiTransfer.getUpiId()+"'");
+        if (upiTransfer.getUpiId() != null)
+            strings.add("upi_id='" + upiTransfer.getUpiId() + "'");
 
-        if(strings.size() == 0 || upiTransfer.getId() == 0)
+        if (strings.size() == 0 || upiTransfer.getId() == 0)
             return Response.status(Response.Status.PARTIAL_CONTENT).entity("{\"status\":\"failed\", \"reason\":\"Not enough values\"}").build();
 
-        String updateQuery = "update upi_transfer set " + StringUtils.join(strings, ",") + " where id="+upiTransfer.getId() +";";
+        String updateQuery = "update upi_transfer set " + StringUtils.join(strings, ",") + " where id=" + upiTransfer.getId() + ";";
 
         try {
             DbConnector.update(updateQuery);

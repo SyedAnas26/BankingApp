@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Money Transfer</title>
+    <!-- Bootstrap 5 stylesheet -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="https://kit.fontawesome.com/3cd6602617.js" crossorigin="anonymous"></script>
+    <script src='/js/knockout-3.5.1.js'></script>
+    <script src="/js/knockout.mapping-latest.js"></script>
+    <link rel="stylesheet" href="/css/dashboard_style.css">
+
+</head>
+<body>
+<div id="wrapper">
+    <div id="sidebar"></div>
+    <section id="content-wrapper">
+<div class="container my-5">
+    <h1 class="text-center">Money Transfer</h1>
+    <hr>
+
+    <div class="row">
+        <div class="col-md-4">
+            <label for="modeOfPayment">Select Mode of Payment:</label>
+            <select class="form-select" id="modeOfPayment" data-bind="value: modeOfPayment">
+                <option value="0">--Select--</option>
+                <option value="1">UPI</option>
+                <option value="2">Bank Transfer</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row my-4" data-bind="visible: modeOfPayment() === '2' || modeOfPayment() === '1'">
+        <div class="col-md-4">
+            <label for="account">Select Account:</label>
+            <select class="form-select" id="account" data-bind="value: selectedAccountId, options: accountList, optionsText: 'accountNo', optionsValue: 'id'"></select>
+        </div>
+        <div class="col-md-4">
+            <label for="balance">Account Balance:</label>
+            <p id="balance" data-bind="text: selectedAccountBalance"></p>
+        </div>
+    </div>
+
+    <div class="row my-4" data-bind="visible: modeOfPayment() === '2'">
+        <div class="col-md-4">
+            <label for="toAccountNumber">To Account Number:</label>
+            <input type="text" class="form-control" id="toAccountNumber" data-bind="value: toAccountNumber">
+        </div>
+        <div class="col-md-4">
+            <label for="holderName">Holder Name:</label>
+            <input type="text" class="form-control" id="holderName" data-bind="value: holderName">
+        </div>
+        <div class="col-md-4">
+            <label for="amount">Amount:</label>
+            <input type="text" class="form-control" id="amount" data-bind="value: amount">
+        </div>
+    </div>
+
+    <div class="row my-4" data-bind="visible: modeOfPayment() === '1'">
+        <div class="col-md-4">
+            <label for="upiId">UPI ID:</label>
+            <input type="text" class="form-control" id="upiId" data-bind="value: upiId">
+        </div>
+        <div class="col-md-4">
+            <label for="amount">Amount:</label>
+            <input type="text" class="form-control" id="amount" data-bind="value: amount">
+        </div>
+    </div>
+
+    <div class="row my-4">
+        <div class="col-md-12">
+            <button type="button" class="btn btn-primary" data-bind="click: sendMoney">Send Money</button
+        </div>
+    </div>
+
+    <div class="row my-4" data-bind="visible: transactionStatus() === 'success'">
+        <div class="col-md-12">
+            <div class="alert alert-success">
+                Transaction successful! Transaction ID: <span data-bind="text: transactionId"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row my-4" data-bind="visible: transactionStatus() === 'failed'">
+        <div class="col-md-12">
+            <div class="alert alert-danger">
+                Transaction failed! Please check the account number and holder name.
+            </div>
+        </div>
+    </div>
+</div>
+    </section>
+</div>
+<!-- Knockout JS library -->
+
+<script>
+
+    $(document).ready(function() {
+
+        $("#sidebar").load("/dashboard_pages/common/sidebar.html");
+        var viewModel = function () {
+            var self = this;
+
+            // Observable variables
+            self.modeOfPayment = ko.observable();
+            self.accountList = ko.observableArray([]);
+            self.selectedAccountId = ko.observable();
+            self.toAccountNumber = ko.observable();
+            self.holderName = ko.observable();
+            self.amount = ko.observable();
+            self.upiId = ko.observable();
+            self.transactionStatus = ko.observable();
+            self.transactionId = ko.observable();
+
+            self.selectedAccountBalance = ko.observable();
+
+            // Load account list from API on page load
+
+            $.ajax({
+                url: "/api/customer/" + localStorage.getItem("userId") + "/account/list",
+                type: 'GET',
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("token")
+                },
+                data: {userId: localStorage.getItem("userId")},
+                success: function (data) {
+                    self.accountList(data);
+                },
+                error: function (jqXHR, exception) {
+                    var msg = '';
+                    if (jqXHR.status === 0) {
+                        msg = 'Not connect.\n Verify Network.';
+                    } else if (jqXHR.status === 401) {
+                        msg = 'UnAuthorized , Login Again';
+                    }
+                    alert(msg);
+                    location.href='/';
+                }
+            });
+
+
+            // Update account balance on account selection
+            self.selectedAccountId.subscribe(function (accountId) {
+                self.selectedAccountBalance(self.accountList().find((ac) => ac.id === accountId).balance)
+            });
+
+            // Send money function
+            self.sendMoney = function () {
+
+                if (self.selectedAccountBalance() < self.amount()) {
+                    alert("Amount cannot be greater than Selected Account Balance");
+                    return;
+                }
+                var data = {
+                    accountId: self.selectedAccountId(),
+                    toAccountNumber: self.toAccountNumber(),
+                    holderName: self.holderName(),
+                    amount: self.amount(),
+                    modeOfPayment: self.modeOfPayment()
+                };
+
+                if (self.modeOfPayment() == 1) {
+                    data.upiId = self.upiId();
+                }
+
+                // Call API to verify account
+                $.ajax({
+                    url: "/api/customer/" + localStorage.getItem("userId") + "/account/verifyAccount",
+                    type: 'GET',
+                    headers: {
+                        "Authorization": "Bearer " + localStorage.getItem("token")
+                    },
+                    data: data,
+                    success: function (response) {
+                        var jsonResponse = $.parseJSON(response);
+                        if (jsonResponse.status === "success") {
+                            // If account is verified, create transaction
+                            data["toAccountId"] = jsonResponse.toAccountId;
+                            data["transactionStatus"] = 2; // Pending
+                            data["transactionType"] = 2; // Outgoing
+
+                            $.ajax({
+                                url: "/api/customer/" + localStorage.getItem("userId") + "/transaction",
+                                type: 'POST',
+                                headers: {
+                                    "Authorization": "Bearer " + localStorage.getItem("token")
+                                },
+                                data: JSON.stringify(data),
+                                contentType: "application/json",
+                                success: function (response) {
+                                    self.transactionStatus('success');
+                                    self.transactionId(response.id);
+                                    var b = self.selectedAccountBalance() - data.amount
+                                    self.selectedAccountBalance(b);
+                                    self.accountList().some((ac) => {
+                                        if (ac.id === self.selectedAccountId) {
+                                            ac.balance = self.selectedAccountBalance();
+                                            return true
+                                        }
+                                    });
+                                }
+                            });
+                        } else {
+                            // If account is not verified, show error message
+                            self.transactionStatus('failed');
+                        }
+                    }
+                });
+
+            };
+        };
+
+        ko.applyBindings(new viewModel());
+    });
+</script>
+</body>
+</html>

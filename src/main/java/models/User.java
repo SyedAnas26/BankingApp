@@ -9,7 +9,7 @@ public class User {
     private String password;
     private String email;
     private String token;
-    private Boolean isAdmin;
+    private Boolean isEmployee;
 
 
     public int getId() {
@@ -60,12 +60,12 @@ public class User {
         this.token = token;
     }
 
-    public Boolean getAdmin() {
-        return isAdmin;
+    public Boolean getIsEmployee() {
+        return isEmployee;
     }
 
-    public void setAdmin(Boolean admin) {
-        isAdmin = admin;
+    public void setIsEmployee(Boolean admin) {
+        isEmployee = admin;
     }
 
 
