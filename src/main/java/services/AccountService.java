@@ -2,6 +2,7 @@ package services;
 
 import connectors.DbConnector;
 import models.Account;
+import models.enums.AccountStatus;
 import models.enums.UserType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,6 +13,7 @@ import javax.ws.rs.core.Response;
 import java.sql.ResultSet;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.UUID;
 
 @Secured
@@ -52,7 +54,7 @@ public class AccountService {
 
     @Path("/verifyAccount")
     @GET
-    public Response verifyAccountDetails(@QueryParam("holderName") String holderName, @QueryParam("toAccountNumber") int toAccountNumber, @QueryParam("upiId") String upiId, @QueryParam("modeOfPayment") int modeOfPayment) throws Exception {
+    public Response verifyAccountDetails(@QueryParam("holderName") String holderName, @QueryParam("accountNumber") int toAccountNumber, @QueryParam("upiId") String upiId, @QueryParam("modeOfPayment") int modeOfPayment) throws Exception {
         String accountCheckQuery = "";
         if (modeOfPayment == 1)
             accountCheckQuery = "select a.id from account as a inner join user as u on a.user_id = u.id where a.upi_id ='" + upiId + "'";
@@ -105,27 +107,46 @@ public class AccountService {
 
 
     @POST
-    public Response createAccount(Account newAccount) {
-
-        newAccount.setUserId(userId);
-        newAccount.setAccountNo(generateRandomNumber());
-        newAccount.setUpiId(newAccount.getAccountNo() + "@bank.com");
+    public Response createAccount(Account newAccount) throws Exception {
 
         if (newAccount.getAccountType() == null)
             return Response.status(Response.Status.PARTIAL_CONTENT).entity("{\"status\":\"failed\", \"reason\":\"Not enough values\"}").build();
 
-        String insertQuery = "insert into account(balance,account_type,user_id,account_no,upi_id) values ('" +
-                newAccount.getBalance() + "','" +
-                newAccount.getAccountType().getId() + "','" + newAccount.getUserId() + "','" + newAccount.getAccountNo() + "','" + newAccount.getUpiId() + "')";
-        try {
-            newAccount.setId(DbConnector.insert(insertQuery));
-        } catch (SQLIntegrityConstraintViolationException e) {
-            return Response.status(409).entity("{\"error\":\"Account number already exists\"}").build();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Response.serverError().build();
+        String accountLimitQuery = "SELECT COUNT(CASE WHEN a.account_type = 2 THEN 1 END) AS savings_count, COUNT(CASE WHEN a.account_type = 1 THEN 1 END) AS salary_count from account a where user_id="+userId;
+        newAccount.setUserId(userId);
+        newAccount.setAccountNumber(generateRandomNumber());
+        newAccount.setUpiId(newAccount.getAccountNumber() + "@bank.com");
+
+        ArrayList<Integer> countValues = new ArrayList<>();
+        DbConnector.get(accountLimitQuery, rs->{
+            if(rs.next()){
+                countValues.add(rs.getInt("salary_count") + rs.getInt("savings_count"));
+                countValues.add(rs.getInt("salary_count"));
+                countValues.add(rs.getInt("savings_count"));
+                }
+            return 0;
+        });
+
+        if(countValues.get(newAccount.getAccountType().getId()) < 1) {
+
+            String insertQuery = "insert into account(balance,account_type,user_id,account_no,upi_id) values ('" +
+                    newAccount.getBalance() + "','" +
+                    newAccount.getAccountType().getId() + "','" + newAccount.getUserId() + "','" + newAccount.getAccountNumber() + "','" + newAccount.getUpiId() + "')";
+            try {
+                newAccount.setId(DbConnector.insert(insertQuery));
+            } catch (SQLIntegrityConstraintViolationException e) {
+                return Response.status(409).entity("{\"error\":\"Account number already exists\"}").build();
+            } catch (Exception e) {
+                e.printStackTrace();
+                return Response.serverError().build();
+            }
+
+            newAccount.setCreationDate(new Date());
+            newAccount.setAccountStatus(AccountStatus.ACTIVE);
+            return Response.ok().entity(newAccount).build();
+        }else {
+            return Response.status(Response.Status.NOT_ACCEPTABLE).entity("{\"status\":\"failed\", \"reason\":\"User has already the specified Accounts\"}").build();
         }
-        return Response.ok().entity(newAccount).build();
 
     }
 
@@ -138,6 +159,8 @@ public class AccountService {
             queryStrings.add("account_type=" + account.getAccountType().getId());
         if (account.getBalance() > 0)
             queryStrings.add("balance=" + account.getBalance());
+        if (account.getAccountStatus() != null && account.getBalance() == 0)
+            queryStrings.add("status=" + account.getAccountStatus().getId());
 
         if (queryStrings.size() == 0 || account.getId() == 0)
             return Response.status(Response.Status.PARTIAL_CONTENT).entity("{\"status\":\"failed\", \"reason\":\"Not enough values\"}").build();

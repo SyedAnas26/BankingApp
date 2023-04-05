@@ -1,6 +1,5 @@
 package services.authentication;
 
-import com.owlike.genson.annotation.JsonIgnore;
 import connectors.DbConnector;
 import models.User;
 import services.Secured;
@@ -50,7 +49,7 @@ public class AuthenticationService {
     }
 
 
-    @Path("/register")
+    @Path("/signup")
     @POST
     public Response registerUser(@FormParam("email") String email,
                                  @FormParam("password") String password,

@@ -23,7 +23,7 @@
                     <div class="input-group mb-3">
                         <label class="input-group-text" for="account-select">Account ID:</label>
                         <select class="form-select" id="account-select"
-                                data-bind="options: accounts, optionsText: 'accountNo', optionsCaption: 'Select an account', value: selectedAccount"></select>
+                                data-bind="options: accounts, optionsText: 'accountNumber', optionsCaption: 'Select an account', value: selectedAccount"></select>
                     </div>
                     <p class="card-text">Balance: Rs.<span data-bind="text: selectedBalance"/></p>
                 </div>
@@ -108,14 +108,18 @@
                         msg = 'Not connect.\n Verify Network.';
                     } else if (jqXHR.status === 401) {
                         msg = 'UnAuthorized , Login Again';
+                    } else if (jqXHR.status === 500)  {
+                        msg = 'Internal error ,Try Again';
                     }
+                    alert(msg);
+                    location.href = '/';
                 }
             });
 
             // Update the selectedBalance when the selectedAccount changes
             self.selectedAccount.subscribe(function (account) {
                 var selectedAccount = ko.utils.arrayFirst(self.accounts(), function (item) {
-                    return item.accountNo === account.accountNo;
+                    return item.accountNumber === account.accountNumber;
                 });
                 if (selectedAccount) {
                     self.selectedBalance(selectedAccount.balance);

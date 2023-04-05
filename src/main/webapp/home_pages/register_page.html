@@ -31,15 +31,15 @@
         <div class="card" style="border-radius: 15px;">
             <div class="card-body p-5">
                 <h3 class="text-uppercase text-center mb-5">Create an account</h3>
-                <form action="/api/auth/signup" method="post" onsubmit="return validate()">
+                <form id="registerForm" action="/api/auth/signup" method="post" onsubmit="return validate()">
                     <div class="form-outline mb-4">
                         <label class="form-label" for="firstName">First Name</label>
-                        <input type="text" id="firstName" name="name" class="form-control form-control-lg" required/>
+                        <input type="text" id="firstName" name="firstName" class="form-control form-control-lg" required/>
                     </div>
 
                     <div class="form-outline mb-4">
                         <label class="form-label" for="lastName">Last Name</label>
-                        <input type="text" id="lastName" name="name" class="form-control form-control-lg" required/>
+                        <input type="text" id="lastName" name="lastName" class="form-control form-control-lg" required/>
                     </div>
 
                     <div class="form-outline mb-4">
@@ -82,7 +82,8 @@
 
     function validate() {
         var email = document.getElementById("email").value;
-        var name = document.getElementById("name").value;
+        var name = document.getElementById("firstName").value;
+
         var password1 = document.getElementById("pass1").value;
         var password2 = document.getElementById("pass2").value;
         if (!email || email.trim() == "") {
@@ -101,6 +102,21 @@
             return true;
         }
     }
+
+
+    $("#registerForm").submit(function(e) {
+        e.preventDefault();
+        if (validate()) {
+            $.post($(this).attr("action"), $(this).serialize() , function (data) {
+                if (data.status === "success") {
+                    alert("Successfully Created account");
+                    location.href="/";
+                } else {
+                    alert(data.reason)
+                }
+            });
+        }
+    });
 </script>
 
 </body>

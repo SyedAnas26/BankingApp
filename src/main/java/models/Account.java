@@ -1,5 +1,6 @@
 package models;
 
+import models.enums.AccountStatus;
 import models.enums.AccountType;
 
 import java.sql.ResultSet;
@@ -11,12 +12,14 @@ public class Account {
 
     private int id;
     private int userId;
-    public int accountNo;
+    public int accountNumber;
     private float balance;
     private Date creationDate;
     private AccountType accountType;
 
     private String upiId;
+
+    private AccountStatus accountStatus;
 
     public String getUpiId() {
         return upiId;
@@ -42,12 +45,12 @@ public class Account {
         this.userId = userId;
     }
 
-    public int getAccountNo() {
-        return accountNo;
+    public int getAccountNumber() {
+        return accountNumber;
     }
 
-    public void setAccountNo(int accountNo) {
-        this.accountNo = accountNo;
+    public void setAccountNumber(int accountNumber) {
+        this.accountNumber = accountNumber;
     }
 
     public float getBalance() {
@@ -74,6 +77,13 @@ public class Account {
         this.accountType = accountType;
     }
 
+    public AccountStatus getAccountStatus() {
+        return accountStatus;
+    }
+
+    public void setAccountStatus(AccountStatus accountStatus) {
+        this.accountStatus = accountStatus;
+    }
 
     public void setValuesFromResultSet(ResultSet rs) throws SQLException {
         this.id = rs.getInt("id");
@@ -81,7 +91,8 @@ public class Account {
         this.accountType = AccountType.getTypeById(rs.getInt("account_type"));
         this.userId = rs.getInt("user_id");
         this.creationDate = rs.getDate("created_date");
-        this.accountNo = rs.getInt("account_no");
+        this.accountNumber = rs.getInt("account_no");
         this.upiId = rs.getString("upi_id");
+        this.accountStatus = AccountStatus.getTypeById(rs.getInt("status"));
     }
 }

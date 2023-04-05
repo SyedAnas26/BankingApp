@@ -58,16 +58,12 @@
     <script type="text/javascript">
 
 
-        // $.ajax({
-        //     url: "getUserId",
-        //     type: 'POST',
-        //     success: function (response) {
-        //         if (response.user_id !== 'null') {
-        //             localStorage.setItem("userId", response.user_id);
-        //             localStorage.setItem("name",response.name);
-        //             localStorage.setItem("isAdmin",response.isAdmin);
-        //             location = "dashboard";
-        //         }
+        // $(document).ready(function () {
+        //     if (localStorage.getItem("userId") && localStorage.getItem("userId") !== "null") {
+        //         if (localStorage.getItem("isEmployee") === "true")
+        //             window.location.href = '/employee/dashboard';
+        //         else
+        //             window.location.href = '/customer/dashboard';
         //     }
         // });
 

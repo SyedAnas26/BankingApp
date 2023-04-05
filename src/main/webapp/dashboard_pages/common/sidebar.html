@@ -13,8 +13,11 @@
         <li id="dashboard">
             <a href="dashboard"><i class="fa fa-home"></i>DashBoard</a>
         </li>
-        <li id="books_manager">
+        <li id="bank_statement">
             <a href="bank_statement"><i class="fa fa-tasks"></i>Bank Statements</a>
+        </li>
+        <li id="bank_contact">
+            <a href="bank_contact"><i class="fa fa-user"></i>Bank Contacts</a>
         </li>
         <li id="transfer_money">
             <a href="transfer_money"><i class="fa fa-retweet"></i>Transfer Money</a>
@@ -79,6 +82,7 @@
             contentType: "application/json",
             success: function (response) {
                 if (response.status === "success") {
+                    localStorage.setItem("userType", null);
                     localStorage.setItem("userId", null);
                     localStorage.setItem("token", null);
                     localStorage.setItem("isEmployee", null);

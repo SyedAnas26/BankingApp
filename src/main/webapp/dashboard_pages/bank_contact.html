@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bank Contacts</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="https://kit.fontawesome.com/3cd6602617.js" crossorigin="anonymous"></script>
+  <script src='/js/knockout-3.5.1.js'></script>
+  <script src="/js/knockout.mapping-latest.js"></script>
+  <link rel="stylesheet" href="/css/dashboard_style.css">
+</head>
+<body>
+<div id="wrapper">
+  <div id="sidebar"></div>
+  <section id="content-wrapper">
+<div class="container-fluid">
+  <div class="row">
+    <div style="margin-left: 10% !important;" class="col-md-8 offset-md-3 mt-5">
+      <div class="card">
+        <div class="card-header">
+          <h4>Create Bank Contact</h4>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="accountNumber">Account Number</label>
+            <input type="number" class="form-control" id="accountNumber" placeholder="Enter Account Number" data-bind="textInput: accountNumber"/>
+          </div>
+          <div style="margin-top: 10px" class="form-group">
+            <label for="holderName">Holder Name</label>
+            <input type="text" class="form-control" id="holderName" placeholder="Enter Holder Name" data-bind="textInput: holderName" />
+          </div>
+          <div style="margin-top: 10px" class="form-group">
+            <label for="nickName">Nick Name</label>
+            <input type="text" class="form-control" id="nickName" placeholder="Enter Nick Name" data-bind="textInput: nickName" />
+          </div>
+          <button style="margin-top: 10px" type="button" class="btn btn-primary" data-bind="click: createContact">Create Contact</button>
+        </div>
+      </div>
+      <div class="mt-5">
+        <h4>Bank Contacts</h4>
+        <hr>
+        <div class="card-deck" data-bind="foreach: contacts">
+          <div style="margin-bottom: 10px" class="card">
+            <div class="card-body">
+              <h5 class="card-title" data-bind="text: accountNumber"></h5>
+              <p class="card-text"><span class="fw-bold">Account ID:</span> <span data-bind="text: accountId"></span></p>
+              <p class="card-text"><span class="fw-bold">Name:</span> <span data-bind="text: holderName"></span></p>
+              <p class="card-text"><span class="fw-bold">Nick Name:</span> <span data-bind="text: nickName"></span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </section>
+</div>
+
+<script>
+  $(document).ready(function() {
+
+    $("#sidebar").load("/dashboard_pages/common/sidebar.html");
+
+    var viewModel = function() {
+      var self = this;
+
+      self.accountNumber = ko.observable("");
+      self.holderName = ko.observable("");
+      self.nickName = ko.observable("");
+      self.contacts = ko.observableArray([]);
+
+
+      self.validate = function (){
+        if(!/^\d+$/.test(self.accountNumber())){
+          alert("Kindly check account number format");
+          return false;
+        }
+        if(self.holderName() === ""){
+          alert("Kindly fill holder name");
+          return false;
+        }
+        return true;
+      }
+
+      // Function to create a new bank contact
+      self.createContact = function() {
+        if(!self.validate())
+          return;
+
+        var data = {
+          accountNumber: self.accountNumber(),
+          holderName: self.holderName(),
+          nickName: self.nickName(),
+          userId: localStorage.getItem("userId")
+        };
+        $.ajax({
+          url: "/api/" +  localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/account/verifyAccount",
+          type: "GET",
+          headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+          },
+          data: data,
+          success: function(response) {
+            console.log(response);
+            var r = JSON.parse(response)
+            if (r.status === "failed") {
+              alert("Account and Holder Name does not match");
+            } else {
+              data.accountId = r.toAccountId
+              $.ajax({
+                url: "/api/" + localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/bank_contact/",
+                type: "POST",
+                headers: {
+                  "Authorization": "Bearer " + localStorage.getItem("token")
+                },
+                data: JSON.stringify(data),
+                contentType: "application/json",
+                success: function (response) {
+                  self.contacts.push(response);
+                  self.accountNumber("");
+                  self.holderName("");
+                  self.nickName("");
+                }, error: function (jqXHR, exception) {
+                  var msg = '';
+                  if (jqXHR.status === 409) {
+                    alert("Contact Already Exists");
+                  }
+                }
+              });
+            }
+          }
+        });
+      };
+
+      // Function to fetch existing bank contacts
+      self.fetchContacts = function() {
+        $.ajax({
+          url: "/api/" +  localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/bank_contact/list",
+          type: "GET",
+          headers: {
+            "Authorization": "Bearer " + localStorage.getItem("token")
+          },
+          success: function(response) {
+            self.contacts(response);
+          }
+        });
+      };
+
+      // Call fetchContacts on initialization
+      self.fetchContacts();
+    };
+
+    ko.applyBindings(new viewModel());
+  });
+</script>
+</body>
+</html>

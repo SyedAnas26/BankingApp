@@ -20,45 +20,50 @@
     <section id="content-wrapper">
         <div class="container">
             <h1 class="text-center">Accounts</h1>
-            <hr>
+
 
             <!-- Create New Account Card -->
-            <!-- ko if: isEmployee() === false -->
-            <div class="card my-4">
-                <div class="card-header">
-                    <button class="btn btn-link" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#createNewAccount" aria-expanded="true" aria-controls="createNewAccount">
-                        Create New Account
-                    </button>
-                </div>
-                <div class="collapse show" id="createNewAccount" data-bs-parent="#accordion">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label for="accountType">Account Type:</label>
-                                <select class="form-select" id="accountType" data-bind="value: accountType">
-                                    <option value="1">Salary</option>
-                                    <option value="2">Savings</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4" style="margin-top: 23px;">
-                                <button type="button" class="btn btn-primary" data-bind="click: createAccount">Create
-                                    Account
-                                </button>
+            <!-- ko if: isEmployee() === "false" -->
+            <div data-bind="if: accountList().length < 2">
+                <hr>
+                <div class="card my-4">
+                    <div class="card-header">
+                        <button class="btn btn-link" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#createNewAccount" aria-expanded="true"
+                                aria-controls="createNewAccount">
+                            Create New Account
+                        </button>
+                    </div>
+                    <div class="collapse show" id="createNewAccount" data-bs-parent="#accordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="accountType">Account Type:</label>
+                                    <select class="form-select" id="accountType" data-bind="value: accountType">
+                                        <option value="1">Salary</option>
+                                        <option value="2">Savings</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4" style="margin-top: 23px;">
+                                    <button type="button" class="btn btn-primary" data-bind="click: createAccount">
+                                        Create
+                                        Account
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             <!-- /ko -->
-
+            <!-- ko if: isEmployee() === "true" -->
             <div class="col-md-4" style="margin-bottom: 20px">
                 <div class="form-group">
                     <label class="filter-label">Search with Account Number: </label>
                     <input type="text" class="form-control" data-bind="value: accountNumber">
                 </div>
             </div>
-
+            <!-- /ko -->
             <!-- Accounts List -->
             <div class="card">
                 <div class="card-header">
@@ -70,13 +75,29 @@
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h5 class="card-title"><b>Account Number:</b> <span
-                                            data-bind="text: accountNo"></span></h5>
+                                            data-bind="text: accountNumber"></span></h5>
                                     <p class="card-text"><b>Account Type: </b><span
                                             data-bind="text: $root.getAccountType(accountType)"></span></p>
                                     <p class="card-text"><b>Balance: </b><span data-bind="text: balance"></span></p>
                                     <p class="card-text"><b>UPI ID: </b><span data-bind="text: upiId"></span></p>
                                     <p class="card-text"><b>Created Date: </b><span
                                             data-bind="text: $root.getDate(creationDate)"></span></p>
+
+                                    <div data-bind="if:accountStatus() == '1'" class="col-md-3"
+                                         style="margin-top: 10px;">
+                                        <button type="button" class="btn btn-danger"
+                                                data-bind="click:$root.changeAccountStatus.bind($data,'0',$index())">
+                                            Deactivate
+                                        </button>
+                                    </div>
+
+                                    <div data-bind="if:accountStatus() == '0'" class="col-md-3"
+                                         style="margin-top: 10px;">
+                                        <button type="button" class="btn btn-success"
+                                                data-bind="click:$root.changeAccountStatus.bind($data,'1',$index())">
+                                            Activate
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -104,14 +125,14 @@
 
             // Load account list from API on page load
             $.ajax({
-                url: "/api/" +  localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/account/list",
+                url: "/api/" + localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/account/list",
                 type: 'GET',
                 headers: {
                     "Authorization": "Bearer " + localStorage.getItem("token")
                 },
                 data: {userId: localStorage.getItem("userId")},
                 success: function (data) {
-                    self.accountList(data);
+                    self.accountList(ko.mapping.fromJS(data)());
                 },
                 error: function (jqXHR, exception) {
                     var msg = '';
@@ -126,7 +147,7 @@
             });
 
             self.getDate = function (millis) {
-                var date = new Date(millis);
+                var date = new Date(millis());
                 var options = {timeZone: 'Asia/Kolkata'};
                 return date.toLocaleString('en-IN', options);
             };
@@ -135,7 +156,7 @@
             self.createAccount = function () {
                 var d = {accountType: self.accountType()}
                 $.ajax({
-                    url: "/api/" +  localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/account/",
+                    url: "/api/" + localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/account/",
                     type: 'POST',
                     headers: {
                         "Authorization": "Bearer " + localStorage.getItem("token")
@@ -144,23 +165,59 @@
                     contentType: "application/json",
                     success: function (response) {
                         alert("Successfully created account")
-                        self.accountList.push(response);
+                        var l = ko.mapping.fromJS(response);
+                        console.log(l);
+                        self.accountList.push(l);
                         self.accountType(null);
+                    }, error: function (jqXHR, exception) {
+                        if (jqXHR.status === 0) {
+                            alert('Not connect.\n Verify Network.');
+                            location.href = '/';
+                        } else if (jqXHR.status === 401) {
+                            alert('UnAuthorized , Login Again');
+                            location.href = '/';
+                        } else if (jqXHR.status === 406) {
+                            alert('You already have one account in the Selected Type')
+                        }
                     }
                 });
             };
 
+            self.changeAccountStatus = function (changedStatus, index) {
+                var d = {id: self.accountList()[index].id(), accountStatus: changedStatus}
+                if (self.accountList()[index].balance() === 0) {
+                    $.ajax({
+                        url: "/api/" + localStorage.getItem("userType") + "/" + localStorage.getItem("userId") + "/account/",
+                        type: 'PUT',
+                        headers: {
+                            "Authorization": "Bearer " + localStorage.getItem("token")
+                        },
+                        data: JSON.stringify(d),
+                        contentType: "application/json",
+                        success: function (response) {
+                            alert("Successfully changed account status")
+                            self.accountList().some(function (acc) {
+                                if (acc.id() === self.accountList()[index].id())
+                                    acc.accountStatus(changedStatus);
+                            });
+                        }
+                    });
+                } else {
+                    alert("Withdraw your balance before deactivating")
+                }
+            }
+
             self.filteredAccountList = ko.computed(function () {
                 var result = self.accountList();
-                if(self.accountNumber())
-                    return result.filter(function (acc){
-                        return acc.accountNo.toString().includes(self.accountNumber())
+                if (self.accountNumber())
+                    return result.filter(function (acc) {
+                        return acc.accountNumber().toString().includes(self.accountNumber())
                     });
                 return result;
             })
 
             self.getAccountType = function (id) {
-                return id == 1 ? "Salary" : "Savings";
+                return id() === "1" ? "Salary" : "Savings";
             }
         };
 

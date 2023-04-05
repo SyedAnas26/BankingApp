@@ -5,7 +5,6 @@ import models.enums.UserType;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -33,6 +32,11 @@ public class MainService {
         return new TransactionService(userType, userId);
     }
 
+    @Path("/bank_contact")
+    public BankContactService getBankContactService() {
+        return new BankContactService(userType, userId);
+    }
+
     @Path("/customerData")
     @GET
     public Response getCustomerData(@QueryParam("userId") String userId) throws Exception {
@@ -48,6 +52,7 @@ public class MainService {
                 "where u.is_employee=0 \n" +
                 "GROUP BY " +
                 "u.id " ;
+
         JsonArrayBuilder userListBuilder = Json.createArrayBuilder();
         DbConnector.get(query, rs -> {
             while (rs.next()) {
@@ -106,15 +111,17 @@ public class MainService {
                 if (UserType.getTypeByPath(userType) == UserType.CUSTOMER) {
                     String accountListStr = rs.getString("account_list");
                     JsonArrayBuilder accountListBuilder = Json.createArrayBuilder();
-                    for (String accountStr : accountListStr.split(",")) {
-                        System.out.println(accountStr);
-                        String[] accountArr = accountStr.split(":");
-                        JsonObjectBuilder accountBuilder = Json.createObjectBuilder();
-                        accountBuilder.add("accountNo", accountArr[0]);
-                        accountBuilder.add("balance", accountArr[1]);
-                        accountListBuilder.add(accountBuilder);
+                    if(rs.getInt("account_count") > 0) {
+                        for (String accountStr : accountListStr.split(",")) {
+                            System.out.println(accountStr);
+                            String[] accountArr = accountStr.split(":");
+                            JsonObjectBuilder accountBuilder = Json.createObjectBuilder();
+                            accountBuilder.add("accountNumber", accountArr[0]);
+                            accountBuilder.add("balance", accountArr[1]);
+                            accountListBuilder.add(accountBuilder);
+                        }
+                        jsonBuilder.add("accountList", accountListBuilder.build());
                     }
-                    jsonBuilder.add("accountList", accountListBuilder.build());
                 }
             }
             return null;

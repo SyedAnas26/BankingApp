@@ -3,6 +3,7 @@ package services;
 import connectors.DbConnector;
 
 import models.Transaction;
+import models.enums.AccountStatus;
 import models.enums.TransactionStatus;
 import models.enums.TransactionType;
 import models.enums.UserType;
@@ -78,6 +79,10 @@ public class TransactionService {
         if (!verifyAccount(newTransaction.getAccountId()))
             return Response.status(Response.Status.UNAUTHORIZED).entity("{\"status\":\"failed\", \"reason\":\"Invalid Account ID\"}").build();
 
+        if(getAccountStatus(newTransaction.getToAccountId()) == AccountStatus.INACTIVE)
+            newTransaction.setTransactionStatus(TransactionStatus.FAILED);
+
+
         String insertQuery = "insert into transaction(account_id,mode_of_payment,transaction_type,amount,transaction_status,to_account_id) values ('" +
                 newTransaction.getAccountId() + "','" +
                 newTransaction.getModeOfPayment().getId() + "','" + newTransaction.getTransactionType().getId() +
@@ -122,6 +127,16 @@ public class TransactionService {
 
         return Response.ok().entity(newTransaction).build();
 
+    }
+
+    private AccountStatus getAccountStatus(int toAccountId) throws Exception {
+        String accountCheckQuery = "select status from account where id=" + toAccountId + ";";
+        int status = (int) DbConnector.get(accountCheckQuery, rs->{
+            if(rs.next())
+                return rs.getInt("status");
+            return -1;
+        });
+        return AccountStatus.getTypeById(status);
     }
 
     private boolean verifyAccount(int accountId) throws Exception {

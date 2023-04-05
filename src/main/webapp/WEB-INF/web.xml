@@ -17,6 +17,7 @@
         <url-pattern>/api/*</url-pattern>
     </servlet-mapping>
 
+    <!-- Login & Signup pages -->
     <servlet>
         <servlet-name>Login</servlet-name>
         <jsp-file>/home_pages/login_page.html</jsp-file>
@@ -38,25 +39,31 @@
         <jsp-file>/home_pages/register_page.html</jsp-file>
     </servlet>
 
-    <servlet>
-        <servlet-name>Customer Dashboard</servlet-name>
-        <jsp-file>/dashboard_pages/dashboard.html</jsp-file>
-    </servlet>
-
-    <servlet-mapping>
-        <servlet-name>Customer Dashboard</servlet-name>
-        <url-pattern>/customer/dashboard</url-pattern>
-    </servlet-mapping>
-
-    <servlet-mapping>
-        <servlet-name>Customer Dashboard</servlet-name>
-        <url-pattern>/employee/dashboard</url-pattern>
-    </servlet-mapping>
-
     <servlet-mapping>
         <servlet-name>Signup</servlet-name>
         <url-pattern>/signup_page</url-pattern>
     </servlet-mapping>
+
+
+    <!-- Dashboard Page !-->
+
+    <servlet>
+        <servlet-name>Dashboard</servlet-name>
+        <jsp-file>/dashboard_pages/dashboard.html</jsp-file>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>Dashboard</servlet-name>
+        <url-pattern>/customer/dashboard</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>Dashboard</servlet-name>
+        <url-pattern>/employee/dashboard</url-pattern>
+    </servlet-mapping>
+
+
+    <!-- Bank Statements Page !-->
 
     <servlet>
         <servlet-name>Bank Statement</servlet-name>
@@ -73,6 +80,8 @@
         <url-pattern>/employee/bank_statement</url-pattern>
     </servlet-mapping>
 
+    <!-- Transfer Money Page !-->
+
     <servlet>
         <servlet-name>Transfer Money</servlet-name>
         <jsp-file>/dashboard_pages/transfer_money.html</jsp-file>
@@ -82,6 +91,8 @@
         <servlet-name>Transfer Money</servlet-name>
         <url-pattern>/customer/transfer_money</url-pattern>
     </servlet-mapping>
+
+    <!-- Accounts Listing Page !-->
 
     <servlet>
         <servlet-name>Accounts Manage</servlet-name>
@@ -98,6 +109,8 @@
         <url-pattern>/employee/accounts</url-pattern>
     </servlet-mapping>
 
+
+    <!-- Customers Listing Page !-->
     <servlet>
         <servlet-name>Customers</servlet-name>
         <jsp-file>/dashboard_pages/customer.html</jsp-file>
@@ -106,6 +119,18 @@
     <servlet-mapping>
         <servlet-name>Customers</servlet-name>
         <url-pattern>/employee/customers</url-pattern>
+    </servlet-mapping>
+
+
+    <!-- Bank Contacts !-->
+    <servlet>
+        <servlet-name>BankContacts</servlet-name>
+        <jsp-file>/dashboard_pages/bank_contact.html</jsp-file>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>BankContacts</servlet-name>
+        <url-pattern>/customer/bank_contact</url-pattern>
     </servlet-mapping>
 
 </web-app>
